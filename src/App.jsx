@@ -19,7 +19,7 @@ function MainLanding() {
 
   const cargarSuitesOcupadas = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/occupied');
+      const response = await fetch('https://suites-gomez-production.up.railway.app/api/occupied');
       const data = await response.json();
       setSuitesOcupadas(data);
     } catch (error) {
@@ -44,7 +44,7 @@ function MainLanding() {
 
   const handlePayment = async () => {
     try {
-      const response = await fetch('http://localhost:4000/create-checkout-session', {
+      const response = await fetch('https://suites-gomez-production.up.railway.app/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
