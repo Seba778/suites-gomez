@@ -33,13 +33,8 @@ const Suite = mongoose.model('Suite', SuiteSchema);
 // ✅ CORS ACTUALIZADO CON TU DOMINIO REAL DE VERCEL
 // ✅ COPIA Y PEGA ESTO EN TU BACKEND
 app.use(cors({
-  origin: [
-    "https://suites-gomez.vercel.app", // Dominios de producción
-    "https://suites-gomez-git-main-sebastian-schamnes-projects.vercel.app",
-    "http://localhost:5173" // Para cuando pruebes en tu PC
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: '*', // Permite peticiones desde cualquier lugar
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 // --- WEBHOOK DE STRIPE (Debe ir antes de express.json) ---
