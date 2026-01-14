@@ -31,16 +31,17 @@ const SuiteSchema = new mongoose.Schema({
 const Suite = mongoose.model('Suite', SuiteSchema);
 
 // ✅ CORS ACTUALIZADO CON TU DOMINIO REAL DE VERCEL
+// ✅ COPIA Y PEGA ESTO EN TU BACKEND
 app.use(cors({
   origin: [
+    "https://suites-gomez.vercel.app", // Dominios de producción
     "https://suites-gomez-git-main-sebastian-schamnes-projects.vercel.app",
-    "http://localhost:5173"
+    "http://localhost:5173" // Para cuando pruebes en tu PC
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 // --- WEBHOOK DE STRIPE (Debe ir antes de express.json) ---
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
