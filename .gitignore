@@ -22,4 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+node_modules
 .env
+dist
+*.exe
+stripe.exe
+.DS_Store
