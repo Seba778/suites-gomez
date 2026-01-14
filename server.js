@@ -30,7 +30,10 @@ const SuiteSchema = new mongoose.Schema({
 });
 const Suite = mongoose.model('Suite', SuiteSchema);
 
-app.use(cors());
+app.use(cors({
+  origin: "https://suites-gomez-1f4y51apt-sebastian-schamnes-projects.vercel.app",
+  credentials: true
+}));
 
 // --- WEBHOOK DE STRIPE (Debe ir antes de express.json) ---
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
