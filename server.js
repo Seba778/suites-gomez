@@ -9,13 +9,6 @@ import SUITES_DATA from './configSuites.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const app = express();
 
-// --- CONFIGURACIÓN DE CORS (CORREGIDO PARA PRODUCCIÓN) ---
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
 // --- CONFIGURAR EMAIL ---
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -36,6 +29,13 @@ const SuiteSchema = new mongoose.Schema({
   fechaVenta: { type: Date, default: Date.now }
 });
 const Suite = mongoose.model('Suite', SuiteSchema);
+
+// --- CAMBIO 1: PERMISOS CORS PARA VERCEL ---
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // --- WEBHOOK DE STRIPE (Debe ir antes de express.json) ---
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -140,7 +140,7 @@ app.post('/create-checkout-session', async (req, res) => {
       }],
       mode: 'payment',
       allow_promotion_codes: true,
-      // URLS CORREGIDAS PARA VERCEL
+      // --- CAMBIO 2: URLS DE VERCEL (CORREGIDAS) ---
       success_url: 'https://suites-gomez.vercel.app/success',
       cancel_url: 'https://suites-gomez.vercel.app/',
       metadata: { suite: suiteNumber.toString() }
