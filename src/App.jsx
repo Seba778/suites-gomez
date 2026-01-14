@@ -73,14 +73,14 @@ const suitesData = {
       color: "bg-[#7dbd7d]",
       numeros: ["350", "332", "330", "326", "324", "316", "314", "312", "308", "306", "304", "302", "301", "305", "307", "309", "378"],
       precioBase: 2500,
-      detalles: "10 tickets + 2 parking + Fast Pass (NO INCLUYE COMIDA Y BEBIDA EL COSTO)", // <--- Texto actualizado
+      detalles: "10 tickets + 2 parking + Fast Pass", // <--- Texto actualizado
       icon: <Crown className="w-5 h-5 text-[#7dbd7d]" />
     },
     "Amarillo Suite Premium": {
       color: "bg-[#ffff00]",
       numeros: ["372", "315"],
       precioBase: 2000,
-      detalles: "20 tickets + 4 parking + Fast Pass (NO INCLUYE COMIDA Y BEBIDA EL COSTO)", // <--- Texto actualizado
+      detalles: "20 tickets + 4 parking + Fast Pass", // <--- Texto actualizado
       icon: <Star className="w-5 h-5 text-yellow-400" />
     },
     /* Comentado para futuros eventos:
@@ -122,7 +122,7 @@ const suitesData = {
           GOMEZ <span className="text-amber-600 italic">ARENA</span>
         </h1>
         <p className="text-stone-400 text-sm md:text-xl font-light italic max-w-2xl mx-auto px-6">
-          "Donde la tradición se encuentra con el privilegio absoluto. Una experiencia diseñada para aquellos que exigen lo mejor en cada detalle."
+          ""Bienvenido a Gómez Arena, aquí encontrarás la zona exclusiva para nuestros eventos, las suites están diseñadas para una experiencia inolvidable"
         </p>
       </header>
 
@@ -268,10 +268,27 @@ const suitesData = {
               <div className="lg:col-span-2 space-y-4">
                 <h3 className="text-white font-bold uppercase tracking-widest text-[11px] mb-8 flex items-center gap-2"><span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></span> 1. SUITE DE PREFERENCIA</h3>
                 {Object.keys(suitesData).map((key) => (
-                  <button key={key} onClick={() => { setSelectedColor(key); setSelectedNumber(""); }} className={`w-full flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 ${selectedColor === key ? 'bg-amber-600 border-amber-400 translate-x-4 shadow-lg shadow-amber-600/20' : 'bg-white/5 border-white/5 text-stone-500 hover:bg-white/10'}`}>
-                    <div className="flex items-center gap-4">{suitesData[key].icon}<span className="font-bold uppercase tracking-tight text-sm">{key}</span></div>
-                    <ArrowRight size={16} className={selectedColor === key ? 'opacity-100' : 'opacity-20'} />
-                  </button>
+                  <div key={key}>
+                    <button 
+                      onClick={() => { setSelectedColor(key); setSelectedNumber(""); }} 
+                      className={`w-full flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 ${selectedColor === key ? 'bg-amber-600 border-amber-400 translate-x-4 shadow-lg shadow-amber-600/20' : 'bg-white/5 border-white/5 text-stone-500 hover:bg-white/10'}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        {suitesData[key].icon}
+                        <div className="flex flex-col text-left">
+                          <span className="font-bold uppercase tracking-tight text-sm text-white">{key}</span>
+                          <span className="text-[10px] text-stone-400 font-medium italic">
+                            {key === "Verde Suite Gold" ? "10 ACCESOS + 2 PARKING + FAST PASS" : "20 ACCESOS + 2 PARKING + FAST PASS"}
+                          </span>
+                        </div>
+                      </div>
+                      <ArrowRight size={16} className={selectedColor === key ? 'opacity-100' : 'opacity-20'} />
+                    </button>
+                    
+                    <p className="text-[9px] text-stone-500 mt-2 mb-6 px-2 italic uppercase">
+                      servicio de comida disponible (no incluye comida y bebida el costo)
+                    </p>
+                  </div>
                 ))}
               </div>
               <div className={`lg:col-span-3 bg-black/40 p-8 md:p-12 rounded-[3rem] border border-white/5 transition-all duration-700 ${!selectedColor ? 'opacity-1 grayscale' : 'opacity-100'}`}>
