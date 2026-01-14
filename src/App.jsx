@@ -22,7 +22,7 @@ function MainLanding() {
 
   const cargarSuitesOcupadas = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/occupied`);
+      const response = await fetch(`${API_URL}/api/occupied`);// v2 conexión estable
       const data = await response.json();
       setSuitesOcupadas(data);
     } catch (error) {
@@ -47,7 +47,7 @@ function MainLanding() {
 
   const handlePayment = async () => {
     try {
-      const response = await fetch(`${API_URL}/create-checkout-session`, {
+      const response = await fetch(`${API_URL}/create-checkout-session`, {// v2 conexión estable
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
