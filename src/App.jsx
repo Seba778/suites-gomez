@@ -8,6 +8,9 @@ import Success from './Success';
 
 const stripePromise = loadStripe('pk_live_51SoV9yRqCWGV92H1MaeHgtUiis4SfVjJ8Z5WEN6H2sFLoZtdnHu7LrU1qCoTuCYAApEgUivuTYVbdhwFMqHydtFq00lgEpDiQS');
 
+// ✅ URL del backend
+const API_URL = 'https://suites-gomez-production.up.railway.app';
+
 function MainLanding() {
   const [scrolled, setScrolled] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -19,7 +22,7 @@ function MainLanding() {
 
   const cargarSuitesOcupadas = async () => {
     try {
-      const response = await fetch('https://suites-gomez-production.up.railway.app/api/occupied');
+      const response = await fetch(`${API_URL}/api/occupied`);
       const data = await response.json();
       setSuitesOcupadas(data);
     } catch (error) {
@@ -44,7 +47,7 @@ function MainLanding() {
 
   const handlePayment = async () => {
     try {
-      const response = await fetch('https://suites-gomez-production.up.railway.app/create-checkout-session', {
+      const response = await fetch(`${API_URL}/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

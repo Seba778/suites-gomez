@@ -9,7 +9,7 @@ const Success = () => {
     // ✅ AQUÍ RECARGAR LAS SUITES OCUPADAS DESPUÉS DEL PAGO
     const recargarSuites = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/occupied');
+        const response = await fetch('https://suites-gomez-production.up.railway.app/api/occupied');
         const data = await response.json();
         console.log("✅ Suites ocupadas recargadas en BD:", data);
         

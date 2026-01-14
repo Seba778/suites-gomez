@@ -30,8 +30,12 @@ const SuiteSchema = new mongoose.Schema({
 });
 const Suite = mongoose.model('Suite', SuiteSchema);
 
+// ✅ CORS ACTUALIZADO CON TU DOMINIO REAL DE VERCEL
 app.use(cors({
-  origin: ["https://suites-gomez-1f4y51apt-sebastian-schamnes-projects.vercel.app", "http://localhost:5173"],
+  origin: [
+    "https://suites-gomez-git-main-sebastian-schamnes-projects.vercel.app",
+    "http://localhost:5173"
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -170,8 +174,8 @@ app.post('/create-checkout-session', async (req, res) => {
       }],
       mode: 'payment',
       allow_promotion_codes: true,
-      success_url: 'https://suites-gomez-1f4y51apt-sebastian-schamnes-projects.vercel.app/success',
-      cancel_url: 'https://suites-gomez-1f4y51apt-sebastian-schamnes-projects.vercel.app/',
+      success_url: 'https://suites-gomez-git-main-sebastian-schamnes-projects.vercel.app/success',
+      cancel_url: 'https://suites-gomez-git-main-sebastian-schamnes-projects.vercel.app/',
       metadata: {
         suite: suiteNumber.toString()
       }
