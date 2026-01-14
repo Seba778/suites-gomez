@@ -68,42 +68,26 @@ function MainLanding() {
     }
   };
 
-  const suitesData = {
-    "Verde Suite Gold": { 
-      color: "bg-[#7dbd7d]", 
-      numeros: ["350", "332", "330", "326", "324", "316", "314", "312", "308", "306", "304", "302", "301", "305", "307", "309", "378"], 
-      precioBase: 2500, 
-      detalles: "10 accesos + 2 parking VIP + Servicio de mesero dedicado + Catering artesanal incluido.",
+const suitesData = {
+    "Verde Suite Gold": {
+      color: "bg-[#7dbd7d]",
+      numeros: ["350", "332", "330", "326", "324", "316", "314", "312", "308", "306", "304", "302", "301", "305", "307", "309", "378"],
+      precioBase: 2500,
+      detalles: "10 tickets + 2 parking + Fast Pass (NO INCLUYE COMIDA Y BEBIDA EL COSTO)", // <--- Texto actualizado
       icon: <Crown className="w-5 h-5 text-[#7dbd7d]" />
     },
-    "Amarillo Suite Premium": { 
-      color: "bg-[#ffff00]", 
-      numeros: ["372", "315"], 
-      precioBase: 2000, 
-      detalles: "20 accesos + 4 parking + Acceso preferencial a la zona de bares y Lounge exclusivo.",
+    "Amarillo Suite Premium": {
+      color: "bg-[#ffff00]",
+      numeros: ["372", "315"],
+      precioBase: 2000,
+      detalles: "20 tickets + 4 parking + Fast Pass (NO INCLUYE COMIDA Y BEBIDA EL COSTO)", // <--- Texto actualizado
       icon: <Star className="w-5 h-5 text-yellow-400" />
     },
-    "Naranja Suite Elite": { 
-      color: "bg-[#ff8c00]", 
-      numeros: ["317", "321", "325", "357", "364"], 
-      precioBase: 3000, 
-      detalles: "10 accesos + 2 parking + Ubicación central con la mejor acústica de la arena.",
-      icon: <Target className="w-5 h-5 text-orange-500" />
-    },
-    "Blanco Suite Master": { 
-      color: "bg-[#ffffff]", 
-      numeros: ["348", "346", "344", "342", "340", "338", "336", "334", "328", "322", "320", "318", "310", "303", "329", "331", "349", "351", "353", "355", "367", "369", "371", "373", "375", "377", "376", "374", "362", "360", "356", "354", "352"], 
-      precioBase: 1800, 
-      detalles: "20 accesos + 4 parking + Espacio lounge expandido ideal para networking corporativo.",
-      icon: <ShieldCheck className="w-5 h-5 text-stone-300" />
-    },
-    "Rojo Suite Diamond": { 
-      color: "bg-[#ff0000]", 
-      numeros: ["358", "365"], 
-      precioBase: 5000, 
-      detalles: "30 accesos + 6 parking + Experiencia Ultra-VIP con acceso a Backstage y Open Bar Premium.",
-      icon: <Gem className="w-5 h-5 text-red-600" />
-    }
+    /* Comentado para futuros eventos:
+    "Naranja Suite Elite": { ... },
+    "Blanco Suite Master": { ... },
+    "Rojo Suite Diamond": { ... }
+    */
   };
 
   return (
@@ -179,7 +163,7 @@ function MainLanding() {
               </div>
 
               <div className="flex items-center gap-4 text-amber-500 font-bold text-xs uppercase tracking-widest group-hover:gap-6 transition-all">
-                Reservar lugar VIP <ArrowRight size={18} />
+                Reserva tu suite AHORA <ArrowRight size={18} />
               </div>
             </div>
           </div>
@@ -282,7 +266,7 @@ function MainLanding() {
             <div className="mb-20"><div className="flex items-center gap-3 text-stone-400 font-bold text-[10px] uppercase tracking-[0.4em] mb-8"><MapPin size={16} /> Mapa de Ubicaciones Nivel 300</div><div className="bg-black/50 p-4 rounded-[2.5rem] border border-white/5 shadow-inner"><img src="/arena.jpg" alt="Mapa" className="w-full h-auto rounded-2xl shadow-2xl border border-white/10" /></div></div>
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
               <div className="lg:col-span-2 space-y-4">
-                <h3 className="text-white font-bold uppercase tracking-widest text-[11px] mb-8 flex items-center gap-2"><span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></span> 1. Sector de Preferencia</h3>
+                <h3 className="text-white font-bold uppercase tracking-widest text-[11px] mb-8 flex items-center gap-2"><span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></span> 1. SUITE DE PREFERENCIA</h3>
                 {Object.keys(suitesData).map((key) => (
                   <button key={key} onClick={() => { setSelectedColor(key); setSelectedNumber(""); }} className={`w-full flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 ${selectedColor === key ? 'bg-amber-600 border-amber-400 translate-x-4 shadow-lg shadow-amber-600/20' : 'bg-white/5 border-white/5 text-stone-500 hover:bg-white/10'}`}>
                     <div className="flex items-center gap-4">{suitesData[key].icon}<span className="font-bold uppercase tracking-tight text-sm">{key}</span></div>
