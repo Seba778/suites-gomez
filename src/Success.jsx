@@ -6,36 +6,40 @@ const Success = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // ✅ AQUÍ RECARGAR LAS SUITES OCUPADAS DESPUÉS DEL PAGO
-    const recargarSuites = async () => {
+    // ✅ RECARGAR LOS DATOS OCUPADOS DESDE TU SERVIDOR LOCAL
+    const recargarOcupados = async () => {
       try {
-        const response = await fetch('https://suites-gomez-production.up.railway.app/api/occupied');
+        const response = await fetch('http://localhost:4000/api/occupied');
         const data = await response.json();
-        console.log("✅ Suites ocupadas recargadas en BD:", data);
+        console.log("✅ Datos de ocupación sincronizados:", data);
         
-        // Opcional: redirigir al inicio después de 5 segundos
+        // Redirigir al inicio después de 5 segundos
         setTimeout(() => {
           navigate('/');
         }, 5000);
       } catch (error) {
-        console.error("❌ Error al recargar suites:", error);
+        console.error("❌ Error al recargar ocupados:", error);
+        // Aunque falle, redirige después de 3 segundos
+        setTimeout(() => {
+          navigate('/');
+        }, 3000);
       }
     };
 
-    recargarSuites();
+    recargarOcupados();
   }, [navigate]);
 
   return (
     <div className="min-h-screen bg-[#060504] text-white font-sans flex items-center justify-center p-6 overflow-hidden relative">
       
-      {/* Elementos decorativos de fondo para mantener el estilo */}
+      {/* Elementos decorativos */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-amber-600/10 blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-900/10 blur-[120px] rounded-full"></div>
 
       <div className="max-w-2xl w-full relative">
         <div className="bg-stone-900/50 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-8 md:p-16 shadow-2xl text-center animate-fade-in">
           
-          {/* Icono de Éxito Estilizado */}
+          {/* Icono de Éxito */}
           <div className="flex justify-center mb-8">
             <div className="relative">
               <div className="absolute inset-0 bg-amber-600 blur-2xl opacity-20 animate-pulse"></div>

@@ -9,7 +9,6 @@ import SUITES_DATA from './configSuites.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const app = express();
 
-// --- CONFIGURAR EMAIL ---
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -18,26 +17,36 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// --- CONEXIÓN MONGODB ---
+// --- CONEXIÓN A BASE DE DATOS ---
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Conectado a MongoDB Atlas'))
   .catch(err => console.error('❌ Error DB:', err));
 
-// Esquema para guardar las suites vendidas
+// Esquema para Suites
 const SuiteSchema = new mongoose.Schema({
   numero: { type: String, required: true, unique: true },
+  estado: { type: String, default: 'bloqueada', enum: ['disponible', 'bloqueada'] },
   fechaVenta: { type: Date, default: Date.now }
 });
 const Suite = mongoose.model('Suite', SuiteSchema);
 
-// ✅ CORS ACTUALIZADO CON TU DOMINIO REAL DE VERCEL
-// ✅ COPIA Y PEGA ESTO EN TU BACKEND
+// Esquema para Mesas
+const TableSchema = new mongoose.Schema({
+  numero: { type: String, required: true, unique: true },
+  categoria: { type: String, required: true },
+  estado: { type: String, default: 'bloqueada', enum: ['disponible', 'bloqueada'] },
+  fechaVenta: { type: Date, default: Date.now }
+});
+const Table = mongoose.model('Table', TableSchema);
+
+// --- MIDDLEWARES ---
 app.use(cors({
-  origin: '*', // Permite peticiones desde cualquier lugar
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-// --- WEBHOOK DE STRIPE (Debe ir antes de express.json) ---
+
+// --- WEBHOOK DE STRIPE ---
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -49,134 +58,142 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Cuando el pago es exitoso
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const suiteNumber = session.metadata?.suite;
+    
+    console.log(`🔍 WEBHOOK METADATA RECIBIDA:`, JSON.stringify(session.metadata));
+    
+    const isTable = session.metadata?.isTable === 'true';
+    const itemNumber = session.metadata?.suite;
+    
+    console.log(`🔍 isTable=${isTable}, itemNumber=${itemNumber}`); 
 
-    if (suiteNumber) {
+    console.log(`🔔 Evento Stripe recibido: isTable=${isTable}, Numero=${itemNumber}`);
+
+    if (itemNumber) {
       try {
-        // GUARDAR EN MONGODB
-        await Suite.findOneAndUpdate(
-          { numero: suiteNumber.toString() },
-          { numero: suiteNumber.toString() },
-          { upsert: true }
-        );
-        console.log(`💾 ÉXITO: Suite #${suiteNumber} guardada en la base de datos.`);
+        if (isTable) {
+          console.log(`🟡 Condición isTable es TRUE - guardando en TABLES`);
+          // GUARDAR MESA EN TABLES
+          const result = await Table.findOneAndUpdate(
+            { numero: itemNumber.toString() },
+            { 
+              numero: itemNumber.toString(),
+              categoria: "VIP",
+              estado: 'bloqueada'
+            },
+            { upsert: true, new: true }
+          );
+          console.log(`💾 ✅ MESA #${itemNumber} bloqueada en Tables (estado: ${result.estado})`);
+        } else {
+          console.log(`🟡 Condición isTable es FALSE - guardando en SUITES`);
+          // GUARDAR SUITE EN SUITES
+          const result = await Suite.findOneAndUpdate(
+            { numero: itemNumber.toString() },
+            { 
+              numero: itemNumber.toString(),
+              estado: 'bloqueada'
+            },
+            { upsert: true, new: true }
+          );
+          console.log(`💾 ✅ SUITE #${itemNumber} bloqueada en Suites (estado: ${result.estado})`);
+        }
 
-        // ✅ ENVIAR EMAIL PERSONALIZADO
+        // Envío de correo
         const customerEmail = session.customer_details?.email;
-        
         if (customerEmail) {
           const mailOptions = {
             from: process.env.EMAIL_USER,
             to: customerEmail,
             subject: '✅ Pago Confirmado - Gomez Arena VIP',
             html: `
-              <div style="font-family: Arial, sans-serif; background-color: #060504; color: white; padding: 30px; border-radius: 10px;">
-                <h2 style="color: #d97706; text-align: center; font-size: 28px;">¡PAGO EXITOSO!</h2>
-                
-                <p style="font-size: 16px; margin-top: 20px;">Hola,</p>
-                
-                <p style="font-size: 16px; line-height: 1.6;">Tu pago ha sido confirmado exitosamente. Tu lugar en <strong>Gomez Western Wear Arena</strong> ha sido reservado.</p>
-                
-                <div style="background-color: #1f2937; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #d97706;">
-                  <h3 style="color: #d97706; margin-top: 0;">Detalles de tu Reserva:</h3>
-                  <p style="margin: 10px 0;"><strong>Suite #:</strong> ${suiteNumber}</p>
-                  <p style="margin: 10px 0;"><strong>Evento:</strong> Primer Jaripeo del Año</p>
-                  <p style="margin: 10px 0;"><strong>Fecha:</strong> 15 de Febrero 2026</p>
-                  <p style="margin: 10px 0;"><strong>Ubicación:</strong> 1818 Rodeo Dr, Mesquite, TX</p>
-                  <p style="margin: 10px 0;"><strong>Fecha de Confirmación:</strong> ${new Date().toLocaleDateString('es-ES')}</p>
-                </div>
-                
-                <div style="background-color: #2d3748; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                  <p style="margin: 0; font-size: 14px; color: #9ca3af;">CÓDIGO DE ACCESO</p>
-                  <p style="margin: 10px 0; font-size: 36px; color: #d97706; font-weight: bold; letter-spacing: 2px;">${suiteNumber}</p>
-                  <p style="margin: 0; font-size: 12px; color: #9ca3af;">Presenta este código en la entrada</p>
-                </div>
-                
-                <p style="font-size: 14px; line-height: 1.6; color: #cbd5e0;">
-                  Presenta este correo junto con tu ID en la entrada para acceder a tu suite VIP. 
-                  Tu código de acceso es la suite número listada arriba.
-                </p>
-                
-                <hr style="border: 1px solid #374151; margin: 30px 0;">
-                
-                <p style="color: #6b7280; font-size: 12px; margin: 10px 0;">
-                  <strong>¿Preguntas?</strong> Contáctanos en: info@gomezarena.com
-                </p>
-                <p style="color: #6b7280; font-size: 12px; margin: 10px 0;">
-                  © 2026 Gomez Western Wear Arena. Todos los derechos reservados.
-                </p>
+              <div style="font-family: sans-serif; padding: 20px; background-color: #000; color: #fff; border: 1px solid #d97706; border-radius: 10px;">
+                <h1 style="color: #d97706;">¡RESERVA CONFIRMADA!</h1>
+                <p style="font-size: 16px;">Tu ${isTable ? 'Mesa VIP' : 'Suite'} número <strong style="font-size: 20px;">${itemNumber}</strong> ya está reservada.</p>
+                <p>Lugar: <strong>1818 Rodeo Dr, Mesquite, TX</strong></p>
+                <p>Presenta este correo al llegar para tu acceso exclusivo.</p>
+                <hr style="border-color: #333;">
+                <p style="font-size: 12px; color: #888;">Gomez Western Wear Arena - Exclusive Experience</p>
               </div>
             `
           };
-
-          transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-              console.error("❌ Error al enviar email:", error);
-            } else {
-              console.log("✅ Email enviado exitosamente a:", customerEmail);
-            }
+          transporter.sendMail(mailOptions, (err) => {
+            if (err) console.error("❌ Error enviando email:", err);
+            else console.log(`📧 Email enviado a ${customerEmail}`);
           });
         }
       } catch (error) {
-        console.error("🚨 Error al guardar en MongoDB:", error);
+        console.error("🚨 Error al guardar en DB:", error);
       }
     }
   }
-
   res.send();
 });
 
 app.use(express.json());
 
-// --- RUTAS API ---
-
-// Obtener suites ocupadas para el mapa
+// --- API PARA CONSULTAR OCUPADOS ---
 app.get('/api/occupied', async (req, res) => {
   try {
-    const occupied = await Suite.find();
-    const numbers = occupied.map(s => s.numero);
-    console.log("📡 Enviando al mapa las suites ocupadas:", numbers);
-    res.json(numbers);
+    // Buscar SOLO items con estado 'bloqueada'
+    const [occupiedSuites, occupiedTables] = await Promise.all([
+      Suite.find({ estado: 'bloqueada' }),
+      Table.find({ estado: 'bloqueada' })
+    ]);
+    
+    const suites = occupiedSuites.map(s => s.numero);
+    const mesas = occupiedTables.map(t => t.numero);
+
+    console.log(`📊 /api/occupied: ${suites.length} Suites + ${mesas.length} Mesas bloqueadas`);
+
+    res.json({ suites, mesas });
   } catch (error) {
-    res.status(500).json([]);
+    console.error("🚨 Error API Ocupados:", error);
+    res.status(500).json({ suites: [], mesas: [] });
   }
 });
 
-// Crear sesión de pago
+// --- CREAR SESIÓN DE PAGO ---
 app.post('/create-checkout-session', async (req, res) => {
-  const { suiteNumber } = req.body;
+  const { suiteNumber, isTable, tableNumber, priceId } = req.body;
 
   try {
-    let categoria = null;
-    // Buscamos a qué categoría pertenece la suite para saber el precio
-    for (const color in SUITES_DATA) {
-      if (SUITES_DATA[color].numeros.map(String).includes(suiteNumber.toString())) {
-        categoria = SUITES_DATA[color];
-        break;
-      }
-    }
+    let lineItem = null;
+    let metadataNumber = "";
 
-    if (!categoria) {
-      return res.status(400).json({ error: "Suite no válida o no encontrada" });
+    if (isTable) {
+      if (!priceId) throw new Error("Falta el Price ID de la mesa");
+      console.log(`🛒 Procesando pago MESA: #${tableNumber}, priceId: ${priceId}`);
+      lineItem = { price: priceId.trim(), quantity: 1 };
+      metadataNumber = tableNumber.toString();
+    } else {
+      console.log(`🛒 Procesando pago SUITE: #${suiteNumber}`);
+      let categoria = null;
+      for (const color in SUITES_DATA) {
+        if (SUITES_DATA[color].numeros.map(String).includes(suiteNumber.toString())) {
+          categoria = SUITES_DATA[color];
+          break;
+        }
+      }
+      if (!categoria) return res.status(400).json({ error: "Suite no encontrada" });
+      
+      lineItem = { price: categoria.price_id.trim(), quantity: 1 };
+      metadataNumber = suiteNumber.toString();
     }
 
     const session = await stripe.checkout.sessions.create({
-      line_items: [{
-        price: categoria.price_id.trim(),
-        quantity: 1,
-      }],
+      line_items: [lineItem],
       mode: 'payment',
       allow_promotion_codes: true,
-      success_url: 'https://suites-gomez-git-main-sebastian-schamnes-projects.vercel.app/success',
-      cancel_url: 'https://suites-gomez-git-main-sebastian-schamnes-projects.vercel.app/',
+      success_url: 'https://www.gomezarenaofficial.com/success',
+      cancel_url: 'https://www.gomezarenaofficial.com/',
       metadata: {
-        suite: suiteNumber.toString()
+        suite: metadataNumber, 
+        isTable: isTable === true ? 'true' : 'false' 
       }
     });
 
+    console.log(`✅ Sesión Stripe creada: ${session.id}`);
     res.json({ url: session.url });
   } catch (error) {
     console.error("🚨 Error Stripe:", error.message);
@@ -185,6 +202,4 @@ app.post('/create-checkout-session', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Servidor Gomez Arena corriendo en puerto ${PORT}`));
