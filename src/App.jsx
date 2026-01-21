@@ -127,11 +127,11 @@ function MainLanding() {
 
   const tablesGroups = {
     "MESAS GOLD": {
-      numeros: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      numeros: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10 , 11, 12, 13, 14, 15, 16, 17],
       icon: <Gem className="w-5 h-5 text-amber-500" />
     },
     "MESAS SILVER": {
-      numeros: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
+      numeros: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
       icon: <Users className="w-5 h-5 text-stone-400" />
     }
   };
