@@ -410,18 +410,22 @@ function MainLanding() {
                         <select 
                           disabled={!selectedTableCategory}
                           onChange={(e) => {
-                            const mesa = vipTables.find(t => t.id === parseInt(e.target.value));
+                            const idVal = parseInt(e.target.value);
+                            if(!idVal) { setSelectedTable(null); return; }
+                            const catFiltro = selectedTableCategory === "MESAS GOLD" ? "MesaVipGold" : "MesaVipSilver";
+                            const mesa = vipTables.find(t => t.id === idVal && t.category === catFiltro);
                             setSelectedTable(mesa);
                           }}
                           className="w-full bg-stone-900 border border-white/10 p-4 rounded-xl text-white font-bold outline-none focus:border-amber-600 transition-all cursor-pointer"
                         >
                           <option value="">Elegir mesa...</option>
                           {selectedTableCategory && tablesGroups[selectedTableCategory].numeros.map(n => {
-                            const tInfo = vipTables.find(vt => vt.id === n);
+                            const catFiltro = selectedTableCategory === "MESAS GOLD" ? "MesaVipGold" : "MesaVipSilver";
+                            const tInfo = vipTables.find(vt => vt.id === n && vt.category === catFiltro);
                             const estaOcupada = mesasOcupadas.some(m => m.toString() === n.toString());
                             
                             return (
-                              <option key={n} value={n} disabled={estaOcupada}>
+                              <option key={`${selectedTableCategory}-${n}`} value={n} disabled={estaOcupada}>
                                 {estaOcupada ? `Mesa #${n} (OCUPADA)` : `Mesa #${n} - ${tInfo?.price} USD`}
                               </option>
                             );
