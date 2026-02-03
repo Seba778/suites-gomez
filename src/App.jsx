@@ -7,7 +7,7 @@ import { vipTables } from './mesasData';
 import Success from './Success'; 
 
 const stripePromise = loadStripe('pk_live_51SoV9yRqCWGV92H1MaeHgtUiis4SfVjJ8Z5WEN6H2sFLoZtdnHu7LrU1qCoTuCYAApEgUivuTYVbdhwFMqHydtFq00lgEpDiQS');
-const API_URL = 'http://localhost:4000'; // CAMBIÉ PARA LOCAL
+const API_URL = 'https://suites-gomez-production.up.railway.app';
 
 // ✅ MAPEO DE CATEGORÍAS VISUALES A INTERNAS
 const CATEGORY_MAP = {
