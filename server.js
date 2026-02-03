@@ -22,31 +22,42 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Conectado a MongoDB Atlas'))
   .catch(err => console.error('❌ Error DB:', err));
 
-// Esquema para Suites
+// ============================================
+// 🔧 ESQUEMAS (Schemas)
+// ============================================
 const SuiteSchema = new mongoose.Schema({
-  numero: { type: String, required: true, unique: true },
-  estado: { type: String, default: 'bloqueada', enum: ['disponible', 'bloqueada'] },
-  fechaVenta: { type: Date, default: Date.now }
+  numero: { type: String, required: true },
+  eventId: { type: String, required: true },
+  category: { type: String, required: true },
+  estado: { type: String, default: 'disponible', enum: ['disponible', 'bloqueada'] },
+  fechaVenta: { type: Date, default: Date.now },
+  clientEmail: { type: String, default: null }
 });
+SuiteSchema.index({ numero: 1, eventId: 1, category: 1 }, { unique: true });
 const Suite = mongoose.model('Suite', SuiteSchema);
 
-// Esquema para Mesas
 const TableSchema = new mongoose.Schema({
-  numero: { type: String, required: true, unique: true },
-  categoria: { type: String, required: true },
-  estado: { type: String, default: 'bloqueada', enum: ['disponible', 'bloqueada'] },
-  fechaVenta: { type: Date, default: Date.now }
+  numero: { type: String, required: true },
+  eventId: { type: String, required: true },
+  category: { type: String, required: true },
+  estado: { type: String, default: 'disponible', enum: ['disponible', 'bloqueada'] },
+  fechaVenta: { type: Date, default: Date.now },
+  clientEmail: { type: String, default: null }
 });
+TableSchema.index({ numero: 1, eventId: 1, category: 1 }, { unique: true });
 const Table = mongoose.model('Table', TableSchema);
 
 // --- MIDDLEWARES ---
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// --- WEBHOOK DE STRIPE ---
+// 🚨 IMPORTANTE: El Webhook va ANTES de express.json()
+// ============================================
+// 🪝 WEBHOOK DE STRIPE
+// ============================================
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -61,139 +72,166 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     
-    console.log(`🔍 WEBHOOK METADATA RECIBIDA:`, JSON.stringify(session.metadata));
-    
     const isTable = session.metadata?.isTable === 'true';
     const itemNumber = session.metadata?.suite;
-    
-    console.log(`🔍 isTable=${isTable}, itemNumber=${itemNumber}`); 
+    const eventId = session.metadata?.eventId;
+    const category = session.metadata?.category;
+    const customerEmail = session.customer_details?.email;
 
-    console.log(`🔔 Evento Stripe recibido: isTable=${isTable}, Numero=${itemNumber}`);
+    if (!itemNumber || !eventId || !category) {
+      console.error(`🚨 FALTA DATOS EN METADATA: número=${itemNumber}, eventId=${eventId}, category=${category}`);
+      return res.send();
+    }
 
-    if (itemNumber) {
-      try {
-        if (isTable) {
-          console.log(`🟡 Condición isTable es TRUE - guardando en TABLES`);
-          // GUARDAR MESA EN TABLES
-          const result = await Table.findOneAndUpdate(
-            { numero: itemNumber.toString() },
-            { 
-              numero: itemNumber.toString(),
-              categoria: "VIP",
-              estado: 'bloqueada'
-            },
-            { upsert: true, new: true }
-          );
-          console.log(`💾 ✅ MESA #${itemNumber} bloqueada en Tables (estado: ${result.estado})`);
-        } else {
-          console.log(`🟡 Condición isTable es FALSE - guardando en SUITES`);
-          // GUARDAR SUITE EN SUITES
-          const result = await Suite.findOneAndUpdate(
-            { numero: itemNumber.toString() },
-            { 
-              numero: itemNumber.toString(),
-              estado: 'bloqueada'
-            },
-            { upsert: true, new: true }
-          );
-          console.log(`💾 ✅ SUITE #${itemNumber} bloqueada en Suites (estado: ${result.estado})`);
-        }
-
-        // Envío de correo
-        const customerEmail = session.customer_details?.email;
-        if (customerEmail) {
-          const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: customerEmail,
-            subject: '✅ Pago Confirmado - Gomez Arena VIP',
-            html: `
-              <div style="font-family: sans-serif; padding: 20px; background-color: #000; color: #fff; border: 1px solid #d97706; border-radius: 10px;">
-                <h1 style="color: #d97706;">¡RESERVA CONFIRMADA!</h1>
-                <p style="font-size: 16px;">Tu ${isTable ? 'Mesa VIP' : 'Suite'} número <strong style="font-size: 20px;">${itemNumber}</strong> ya está reservada.</p>
-                <p>Lugar: <strong>1818 Rodeo Dr, Mesquite, TX</strong></p>
-                <p>Presenta este correo al llegar para tu acceso exclusivo.</p>
-                <hr style="border-color: #333;">
-                <p style="font-size: 12px; color: #888;">Gomez Western Wear Arena - Exclusive Experience</p>
-              </div>
-            `
-          };
-          transporter.sendMail(mailOptions, (err) => {
-            if (err) console.error("❌ Error enviando email:", err);
-            else console.log(`📧 Email enviado a ${customerEmail}`);
-          });
-        }
-      } catch (error) {
-        console.error("🚨 Error al guardar en DB:", error);
+    try {
+      if (isTable) {
+        console.log(`🟡 Guardando MESA #${itemNumber} - ${eventId} - ${category}`);
+        await Table.findOneAndUpdate(
+          { numero: itemNumber.toString(), eventId: eventId, category: category },
+          { 
+            numero: itemNumber.toString(),
+            eventId: eventId,
+            category: category,
+            estado: 'bloqueada',
+            clientEmail: customerEmail,
+            fechaVenta: new Date()
+          },
+          { upsert: true, new: true }
+        );
+      } else {
+        console.log(`🟡 Guardando SUITE #${itemNumber} - ${eventId} - ${category}`);
+        await Suite.findOneAndUpdate(
+          { numero: itemNumber.toString(), eventId: eventId, category: category },
+          { 
+            numero: itemNumber.toString(),
+            eventId: eventId,
+            category: category,
+            estado: 'bloqueada',
+            clientEmail: customerEmail,
+            fechaVenta: new Date()
+          },
+          { upsert: true, new: true }
+        );
       }
+
+      // ENVIAR EMAIL
+      if (customerEmail) {
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: customerEmail,
+          subject: '✅ Pago Confirmado - Gomez Arena VIP',
+          html: `
+            <div style="font-family: sans-serif; padding: 20px; background-color: #000; color: #fff; border: 1px solid #d97706; border-radius: 10px;">
+              <h1 style="color: #d97706;">¡RESERVA CONFIRMADA!</h1>
+              <p style="font-size: 16px;">Tu ${isTable ? 'Mesa VIP' : 'Suite'} número <strong style="font-size: 20px;">#${itemNumber}</strong> ya está reservada.</p>
+              <p><strong>Categoría:</strong> ${category}</p>
+              <p><strong>Evento:</strong> ${eventId}</p>
+              <p>Presenta este correo al llegar para tu acceso exclusivo.</p>
+            </div>
+          `
+        };
+        transporter.sendMail(mailOptions, (err) => {
+          if (err) console.error("❌ Error enviando email:", err);
+          else console.log(`📧 Email enviado a ${customerEmail}`);
+        });
+      }
+    } catch (error) {
+      console.error("🚨 Error al guardar en DB:", error);
     }
   }
   res.send();
 });
 
+// ✅ AHORA SÍ activamos el traductor JSON para el resto de rutas
 app.use(express.json());
 
-// --- API PARA CONSULTAR OCUPADOS ---
+// ============================================
+// ⚡ RESTO DE APIs
+// ============================================
 app.get('/api/occupied', async (req, res) => {
   try {
-    // Buscar SOLO items con estado 'bloqueada'
+    const { eventId } = req.query;
+    if (!eventId) return res.status(400).json({ error: "Falta eventId" });
+
     const [occupiedSuites, occupiedTables] = await Promise.all([
-      Suite.find({ estado: 'bloqueada' }),
-      Table.find({ estado: 'bloqueada' })
+      Suite.find({ eventId: eventId, estado: 'bloqueada' }),
+      Table.find({ eventId: eventId, estado: 'bloqueada' })
     ]);
     
-    const suites = occupiedSuites.map(s => s.numero);
-    const mesas = occupiedTables.map(t => t.numero);
-
-    console.log(`📊 /api/occupied: ${suites.length} Suites + ${mesas.length} Mesas bloqueadas`);
-
-    res.json({ suites, mesas });
+    res.json({ 
+      suites: occupiedSuites.map(s => ({ numero: s.numero, category: s.category })), 
+      mesas: occupiedTables.map(t => ({ numero: t.numero, category: t.category })),
+      eventId 
+    });
   } catch (error) {
-    console.error("🚨 Error API Ocupados:", error);
-    res.status(500).json({ suites: [], mesas: [] });
+    res.status(500).json({ suites: [], mesas: [], error: error.message });
   }
 });
 
-// --- CREAR SESIÓN DE PAGO ---
 app.post('/create-checkout-session', async (req, res) => {
-  const { suiteNumber, isTable, tableNumber, priceId } = req.body;
+  const { suiteNumber, isTable, eventId, category, tableNumber, priceId } = req.body;
+  const CLIENT_URL = 'https://www.gomezarenaofficial.com';
 
   try {
+    if (!eventId) return res.status(400).json({ error: "eventId es requerido" });
+
     let lineItem = null;
     let metadataNumber = "";
 
     if (isTable) {
-      if (!priceId) throw new Error("Falta el Price ID de la mesa");
-      console.log(`🛒 Procesando pago MESA: #${tableNumber}, priceId: ${priceId}`);
+      if (!priceId || !category) return res.status(400).json({ error: "Faltan datos de mesa" });
+
+      const conflicto = await Table.findOne({
+        numero: tableNumber.toString(),
+        eventId: eventId,
+        category: category,
+        estado: 'bloqueada'
+      });
+      if (conflicto) return res.status(409).json({ error: `Mesa #${tableNumber} ya reservada` });
+
       lineItem = { price: priceId.trim(), quantity: 1 };
       metadataNumber = tableNumber.toString();
     } else {
-      console.log(`🛒 Procesando pago SUITE: #${suiteNumber}`);
-      let categoria = null;
+      if (!suiteNumber) return res.status(400).json({ error: "Falta número de suite" });
+
+      // Buscar Price ID en SUITES_DATA
+      let categoriaSuite = null;
       for (const color in SUITES_DATA) {
         if (SUITES_DATA[color].numeros.map(String).includes(suiteNumber.toString())) {
-          categoria = SUITES_DATA[color];
+          categoriaSuite = SUITES_DATA[color];
           break;
         }
       }
-      if (!categoria) return res.status(400).json({ error: "Suite no encontrada" });
-      
-      lineItem = { price: categoria.price_id.trim(), quantity: 1 };
+      if (!categoriaSuite) return res.status(400).json({ error: "Suite no encontrada" });
+
+      const conflicto = await Suite.findOne({
+        numero: suiteNumber.toString(),
+        eventId: eventId,
+        category: category,
+        estado: 'bloqueada'
+      });
+      if (conflicto) return res.status(409).json({ error: `Suite #${suiteNumber} ya reservada` });
+
+      lineItem = { price: categoriaSuite.price_id.trim(), quantity: 1 };
       metadataNumber = suiteNumber.toString();
     }
+
+    const successUrl = `${CLIENT_URL}/success?type=${isTable ? 'mesa' : 'suite'}&eventId=${eventId}&number=${metadataNumber}&cat=${encodeURIComponent(category || '')}`;
 
     const session = await stripe.checkout.sessions.create({
       line_items: [lineItem],
       mode: 'payment',
       allow_promotion_codes: true,
-      success_url: 'https://www.gomezarenaofficial.com/success',
-      cancel_url: 'https://www.gomezarenaofficial.com/',
+      success_url: successUrl,
+      cancel_url: `${CLIENT_URL}/`,
       metadata: {
-        suite: metadataNumber, 
-        isTable: isTable === true ? 'true' : 'false' 
+        suite: metadataNumber,
+        isTable: isTable === true ? 'true' : 'false',
+        eventId: eventId,
+        category: category || ''
       }
     });
 
-    console.log(`✅ Sesión Stripe creada: ${session.id}`);
     res.json({ url: session.url });
   } catch (error) {
     console.error("🚨 Error Stripe:", error.message);
@@ -202,4 +240,4 @@ app.post('/create-checkout-session', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`🚀 Servidor Gomez Arena corriendo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Servidor corriendo en puerto ${PORT}`));
