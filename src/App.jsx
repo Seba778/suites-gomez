@@ -5,7 +5,7 @@ import { MapPin, Crown, Star, Coffee, Car, ShieldCheck, ArrowRight, CheckCircle2
 
 import { vipTables } from './mesasData';
 import Success from './Success'; 
-
+import AdminDashboard from './AdminDashboard'; // Asegúrate de la ruta correcta
 const stripePromise = loadStripe('pk_live_51SoV9yRqCWGV92H1MaeHgtUiis4SfVjJ8Z5WEN6H2sFLoZtdnHu7LrU1qCoTuCYAApEgUivuTYVbdhwFMqHydtFq00lgEpDiQS');
 const API_URL = 'https://suites-gomez-production.up.railway.app';
 
@@ -586,10 +586,13 @@ function MainLanding() {
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<MainLanding />} />
-        <Route path="/success" element={<Success />} />
-      </Routes>
+            <Routes>
+              <Route path="/" element={<MainLanding />} />
+              <Route path="/success" element={<Success />} />
+              
+              {/* 👇 AGREGA ESTA LÍNEA 👇 */}
+              <Route path="/admin-kirk" element={<AdminDashboard />} />
+            </Routes>
     </Router>
   );
 }
