@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import nodemailer from 'nodemailer';
 import SUITES_DATA from './configSuites.js';
 
+console.log("🔑 CLAVE QUE ESTOY USANDO:", process.env.STRIPE_SECRET_KEY);
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const app = express();
 
@@ -179,7 +180,18 @@ app.post('/create-checkout-session', async (req, res) => {
     let metadataNumber = "";
 
     if (isTable) {
-      if (!priceId || !category) return res.status(400).json({ error: "Faltan datos de mesa" });
+      
+      let finalPriceId = priceId; 
+
+      if (eventId === "20-feb-2026") {
+          if (category === "MesaVipGold") {
+              finalPriceId = "price_1T24leRqCWGV92H11PBKIqAE"; // ✅ Gold $600
+          } else if (category === "MesaVipSilver") {
+              finalPriceId = "price_1T24lPRqCWGV92H1XGbRpll4"; // ✅ Silver $500
+          }
+      }
+
+      if (!finalPriceId || !category) return res.status(400).json({ error: "Faltan datos de mesa o precio incorrecto" });
 
       const conflicto = await Table.findOne({
         numero: tableNumber.toString(),
@@ -189,12 +201,12 @@ app.post('/create-checkout-session', async (req, res) => {
       });
       if (conflicto) return res.status(409).json({ error: `Mesa #${tableNumber} ya reservada` });
 
-      lineItem = { price: priceId.trim(), quantity: 1 };
+      lineItem = { price: finalPriceId.trim(), quantity: 1 };
       metadataNumber = tableNumber.toString();
+
     } else {
       if (!suiteNumber) return res.status(400).json({ error: "Falta número de suite" });
 
-      // Buscar Price ID en SUITES_DATA
       let categoriaSuite = null;
       for (const color in SUITES_DATA) {
         if (SUITES_DATA[color].numeros.map(String).includes(suiteNumber.toString())) {
@@ -243,16 +255,9 @@ app.post('/create-checkout-session', async (req, res) => {
 // 🔐 ZONA ADMIN (Añadido sin tocar el resto del código)
 // ==================================================================
 
-// Endpoint para obtener estado de ocupación (para el Dashboard)
-// NOTA: Usamos el mismo endpoint /api/occupied que ya tienes, 
-// pero agregamos lógica para que el admin vea detalles extra si es necesario.
-
-// Endpoint PRINCIPAL para Bloquear/Desbloquear
 app.post('/api/admin/toggle', async (req, res) => {
   const { adminKey, type, numero, eventId, category } = req.body;
 
-  // 1. Seguridad: Verificar contraseña maestra (usa process.env.ADMIN_SECRET)
-  // Si no la tienes definida en .env, usa 'KirkAdmin2026' como respaldo temporal
   const SECRET = process.env.ADMIN_SECRET || 'Kirk2026';
   
   if (adminKey !== SECRET) {
@@ -260,48 +265,37 @@ app.post('/api/admin/toggle', async (req, res) => {
     return res.status(401).json({ error: "Contraseña incorrecta" });
   }
 
-  // 2. Validaciones básicas
   if (!type || !numero || !eventId || !category) {
     return res.status(400).json({ error: "Faltan datos (type, numero, eventId, category)" });
   }
 
   try {
-    // 3. Seleccionar Modelo
     const Model = type === 'suite' ? Suite : Table;
     
-    // Query exacto para encontrar el item
     const query = { 
       numero: numero.toString(), 
       eventId: eventId, 
       category: category 
     };
 
-    // 4. Buscar si ya existe
     const item = await Model.findOne(query);
 
     if (item) {
-      // --- CASO: YA EXISTE (Vamos a intentar DESBLOQUEAR) ---
-      
-      // PROTECCIÓN CRÍTICA: Si tiene un email real (de cliente) y NO es el admin
-      // impedimos borrarlo accidentalmente.
       if (item.clientEmail && !item.clientEmail.includes('admin')) {
         return res.status(400).json({ 
           error: `⚠️ CUIDADO: Esta unidad fue comprada por un cliente real (${item.clientEmail}). No se puede borrar desde aquí.` 
         });
       }
 
-      // Si es un bloqueo manual (o admin decide borrar), lo eliminamos
       await Model.findOneAndDelete(query);
       console.log(`✅ Admin liberó: ${type} ${numero} (${eventId})`);
       return res.json({ status: 'disponible', message: 'Unidad liberada correctamente' });
 
     } else {
-      // --- CASO: NO EXISTE (Vamos a BLOQUEAR) ---
-      
       await Model.create({
         ...query,
         estado: 'bloqueada',
-        clientEmail: 'admin-manual-block', // Marca para saber que fue Kirk
+        clientEmail: 'admin-manual-block',
         fechaVenta: new Date()
       });
       console.log(`🔒 Admin bloqueó: ${type} ${numero} (${eventId})`);
@@ -313,8 +307,6 @@ app.post('/api/admin/toggle', async (req, res) => {
     res.status(500).json({ error: "Error del servidor" });
   }
 });
-
-
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`🚀 Servidor corriendo en puerto ${PORT}`));
