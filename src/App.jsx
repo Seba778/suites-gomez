@@ -16,17 +16,8 @@ const CATEGORY_MAP = {
   "MESAS SILVER": "MesaVipSilver"
 };
 
-// ✅ SOLO QUEDA EL EVENTO DEL 20
-const EVENTS = {
-  "20-feb-2026": {
-    id: "20-feb-2026",
-    name: "ALAMEÑOS DE LA SIERRA & LOS INDOMABLES",
-    date: "Viernes 20 de Febrero",
-    location: "1818 Rodeo Dr, Mesquite, TX",
-    description: "Cinco agrupaciones, una sola noche de puro poder norteño",
-    image: "/evento2.jpg"
-  }
-};
+// ✅ SIN EVENTOS CONFIRMADOS DE MOMENTO
+const EVENTS = {};
 
 function MainLanding() {
   const [scrolled, setScrolled] = useState(false);
@@ -37,10 +28,8 @@ function MainLanding() {
   const [selectedTableCategory, setSelectedTableCategory] = useState(null);
   const [currentEventId, setCurrentEventId] = useState(null);
   
-  // ✅ ESTADO LIMPIO: Solo inicializamos el 20 de feb
-  const [occupancyData, setOccupancyData] = useState({
-    "20-feb-2026": { suites: [], mesas: [] }
-  });
+  // ✅ ESTADO LIMPIO
+  const [occupancyData, setOccupancyData] = useState({});
   const [loadingOccupancy, setLoadingOccupancy] = useState(false);
 
   // ✅ HELPER: Verificar si suite está ocupada
@@ -77,16 +66,16 @@ function MainLanding() {
     }
   };
 
-  // ✅ SOLO CARGAMOS EL 20 DE FEB
+  // ✅ FUNCIÓN EN PAUSA HASTA QUE HAYA EVENTOS
   const cargarEventos = async () => {
-    setLoadingOccupancy(true);
-    try {
-      await Promise.all([
-        cargarOcupadosPorEvento("20-feb-2026")
-      ]);
-    } finally {
-      setLoadingOccupancy(false);
-    }
+    // setLoadingOccupancy(true);
+    // try {
+    //   await Promise.all([
+    //     // cargarOcupadosPorEvento("NUEVO-EVENTO-ID")
+    //   ]);
+    // } finally {
+    //   setLoadingOccupancy(false);
+    // }
   };
 
   useEffect(() => {
@@ -159,18 +148,12 @@ function MainLanding() {
     try {
       const internalCategory = CATEGORY_MAP[selectedTableCategory];
       
-      // ⚠️⚠️⚠️ LÓGICA DE COBRO ACTUALIZADA CON TUS NUEVOS IDs DE STRIPE ⚠️⚠️⚠️
-      
-      // 1. Tomamos el ID original por defecto (por si acaso)
       let finalPriceId = selectedTable.stripePriceId; 
 
-      // 2. Si es el evento del 20 de Febrero, usamos los IDs nuevos que creaste
       if (currentEventId === "20-feb-2026") {
         if (internalCategory === "MesaVipGold") {
-            // ID nuevo de 600 USD (Sacado de tu imagen)
             finalPriceId = "price_1T24IeRqCWGV92H11PBKlqAE"; 
         } else if (internalCategory === "MesaVipSilver") {
-            // ID nuevo de 500 USD (Sacado de tu imagen)
             finalPriceId = "price_1T24IPRqCWGV92H1XGbRpll4"; 
         }
       }
@@ -181,7 +164,7 @@ function MainLanding() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          priceId: finalPriceId, // ✅ Enviamos el ID correcto a Stripe
+          priceId: finalPriceId, 
           isTable: true,
           tableNumber: selectedTable.id.toString(),
           category: internalCategory,
@@ -247,7 +230,8 @@ function MainLanding() {
           <div className="hidden md:flex items-center gap-8 text-[10px] uppercase tracking-[0.2em] font-bold text-stone-400">
               <a href="#eventos" className="hover:text-amber-500 transition-colors">Eventos</a>
               <a href="#nosotros" className="hover:text-amber-500 transition-colors">Nosotros</a>
-              <button onClick={() => openReservationModal("20-feb-2026", "ALAMEÑOS DE LA SIERRA & LOS INDOMABLES")} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2.5 rounded-full transition-all">Reservar Suite</button>
+              {/* ✅ Botón cambiado para hacer scroll a eventos en lugar de abrir el modal */}
+              <a href="#eventos" className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2.5 rounded-full transition-all">Próximos Eventos</a>
           </div>
         </div>
       </nav>
@@ -277,29 +261,18 @@ function MainLanding() {
           </div>
         </section>
 
+        {/* ✅ SECCIÓN DE EVENTOS ACTUALIZADA A "PRÓXIMAMENTE" */}
         <section id="eventos" className="w-full text-center">
           <div className="flex items-center justify-center gap-3 text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em] mb-10">
-            <Calendar size={16} /> Próximo Evento Destacado
+            <Calendar size={16} /> Próximos Eventos
           </div>
-          <div 
-            onClick={() => openReservationModal("20-feb-2026", "ALAMEÑOS DE LA SIERRA & LOS INDOMABLES")}
-            className="group relative rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl bg-stone-900 cursor-pointer max-w-5xl mx-auto min-h-[500px]"
-          >
-            <img src="/evento2.jpg" alt="Alameños" className="absolute inset-0 w-full h-full object-cover opacity-60 transition-all duration-1000 group-hover:scale-110 group-hover:opacity-100" />
-            <div className="relative z-10 flex flex-col justify-end items-center text-center p-8 md:p-20 h-full bg-gradient-to-t from-black via-black/40 to-transparent">
-              <span className="text-amber-500 font-bold text-xs uppercase tracking-[0.5em] mb-4 font-black">VIERNES 20 DE FEBRERO | DALLAS & FT WORTH</span>
-              <h4 className="text-4xl md:text-7xl font-black uppercase italic tracking-tighter leading-none mb-6">ALAMEÑOS DE LA SIERRA <br/> & LOS INDOMABLES</h4>
-              <div className="max-w-3xl space-y-4 mb-8">
-                <p className="text-stone-200 text-sm md:text-xl uppercase tracking-wider font-light">
-                  Cinco agrupaciones, una sola noche de puro poder norteño.
-                </p>
-                <p className="text-stone-300 text-xs md:text-sm italic font-light opacity-0 group-hover:opacity-100 transition-all duration-500">
-                  La Zenda Norteña, Banda Clave Nueva y Alfonso Cota se apoderan del escenario en 1818 Rodeo Drive.
-                </p>
-              </div>
-              <div className="flex items-center gap-4 text-amber-500 font-bold text-xs uppercase tracking-widest group-hover:gap-6 transition-all bg-black/50 px-6 py-3 rounded-full border border-amber-600/30">
-                 Reserva tu lugar <ArrowRight size={18} />
-              </div>
+          <div className="group relative rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl bg-stone-900/60 max-w-5xl mx-auto min-h-[400px] flex items-center justify-center">
+            <div className="relative z-10 flex flex-col items-center text-center p-8 md:p-20">
+              <Calendar size={48} className="text-stone-600 mb-6" />
+              <h4 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter leading-none mb-6 text-stone-500">PRÓXIMAMENTE</h4>
+              <p className="text-stone-400 text-sm md:text-xl uppercase tracking-wider font-light">
+                Nuevas fechas por confirmar.
+              </p>
             </div>
           </div>
         </section>
@@ -486,9 +459,8 @@ function MainLanding() {
                               const internalCategory = CATEGORY_MAP[selectedTableCategory];
                               let mesa = vipTables.find(t => t.id === idVal && t.category === internalCategory);
                               
-                              // ✅ CAMBIO VISUAL FORZADO AL SELECCIONAR
                               if (mesa) {
-                                mesa = { ...mesa }; // Creamos copia para no modificar el original
+                                mesa = { ...mesa }; 
                                 if (internalCategory === "MesaVipGold") mesa.price = 600;
                                 if (internalCategory === "MesaVipSilver") mesa.price = 500;
                               }
@@ -503,7 +475,6 @@ function MainLanding() {
                               const tInfo = vipTables.find(vt => vt.id === n && vt.category === internalCategory);
                               const estaOcupada = isTableOccupied(n.toString(), selectedTableCategory);
                               
-                              // ✅ CAMBIO VISUAL FORZADO EN LA LISTA
                               let displayPrice = tInfo?.price;
                               if (internalCategory === "MesaVipGold") displayPrice = 600;
                               if (internalCategory === "MesaVipSilver") displayPrice = 500;
