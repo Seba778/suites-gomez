@@ -183,8 +183,8 @@ app.post('/create-checkout-session', async (req, res) => {
       let finalPriceId = priceId;
 
       if (eventId === "20-feb-2026") {
-        if (category === "MesaVipGold") finalPriceId = "price_1T24leRqCWGV92H11PBKIqAE";
-        else if (category === "MesaVipSilver") finalPriceId = "price_1T24lPRqCWGV92H1XGbRpll4";
+        if (category === "MesaVipGold") finalPriceId = "price_1T24IeRqCWGV92H11PBKIqAE";
+        else if (category === "MesaVipSilver") finalPriceId = "price_1T24IPRqCWGV92H1XGbRpll4";
       }
 
       if (!finalPriceId || !category) return res.status(400).json({ error: "Faltan datos de mesa o precio incorrecto" });
