@@ -10,14 +10,27 @@ import AdminDashboard from './AdminDashboard';
 const stripePromise = loadStripe('pk_live_51SoV9yRqCWGV92H1MaeHgtUiis4SfVjJ8Z5WEN6H2sFLoZtdnHu7LrU1qCoTuCYAApEgUivuTYVbdhwFMqHydtFq00lgEpDiQS');
 const API_URL = 'https://suites-gomez-production.up.railway.app';
 
-// ✅ MAPEO DE CATEGORÍAS VISUALES A INTERNAS
+// ✅ MAPEO VISUAL → INTERNO (backend intacto)
+// "VIP TABLES" es solo el nombre visual — internamente sigue siendo MesaVipGold
 const CATEGORY_MAP = {
-  "MESAS GOLD": "MesaVipGold",
-  "MESAS SILVER": "MesaVipSilver"
+  "VIP TABLES": "MesaVipGold",
 };
 
-// ✅ SIN EVENTOS CONFIRMADOS DE MOMENTO
-const EVENTS = {};
+// ✅ STRIPE PRICE IDs — SUITES 26-jun-2026
+const SUITE_PRICE_IDS = {
+  "Verde Suite Gold":       "price_1SpNDMRqCWGV92H13HcruvZI",  // $2,000 — 10 personas
+  "Amarillo Suite Premium": "price_1SpE7RRqCWGV92H1zFtEAIV8",  // $4,000 — 20 personas
+};
+
+// ✅ EVENTOS ACTIVOS
+const EVENTS = {
+  "26-jun-2026": {
+    name: "JBF Nations Cup 2026",
+    date: "Viernes 26 de Junio, 2026",
+    location: "1818 Rodeo Dr. Mesquite TX 75149",
+    image: "/evento-16.jpg"
+  }
+};
 
 function MainLanding() {
   const [scrolled, setScrolled] = useState(false);
@@ -28,11 +41,9 @@ function MainLanding() {
   const [selectedTableCategory, setSelectedTableCategory] = useState(null);
   const [currentEventId, setCurrentEventId] = useState(null);
   
-  // ✅ ESTADO LIMPIO
   const [occupancyData, setOccupancyData] = useState({});
   const [loadingOccupancy, setLoadingOccupancy] = useState(false);
 
-  // ✅ HELPER: Verificar si suite está ocupada
   const isSuiteOccupied = (suiteNumber, category, eventId = currentEventId) => {
     if (!eventId || !occupancyData[eventId]) return false;
     return occupancyData[eventId].suites.some(
@@ -40,7 +51,6 @@ function MainLanding() {
     );
   };
 
-  // ✅ HELPER: Verificar si mesa está ocupada
   const isTableOccupied = (tableNumber, visualCategory, eventId = currentEventId) => {
     if (!eventId || !occupancyData[eventId]) return false;
     const internalCategory = CATEGORY_MAP[visualCategory]; 
@@ -66,16 +76,13 @@ function MainLanding() {
     }
   };
 
-  // ✅ FUNCIÓN EN PAUSA HASTA QUE HAYA EVENTOS
   const cargarEventos = async () => {
-    // setLoadingOccupancy(true);
-    // try {
-    //   await Promise.all([
-    //     // cargarOcupadosPorEvento("NUEVO-EVENTO-ID")
-    //   ]);
-    // } finally {
-    //   setLoadingOccupancy(false);
-    // }
+    setLoadingOccupancy(true);
+    try {
+      await Promise.all([cargarOcupadosPorEvento("26-jun-2026")]);
+    } finally {
+      setLoadingOccupancy(false);
+    }
   };
 
   useEffect(() => {
@@ -106,40 +113,41 @@ function MainLanding() {
     setSelectedColor(null);
   };
 
+  // ✅ PAGO SUITES
   const handlePayment = async () => {
     if (!selectedNumber) return alert("Selecciona un número de suite");
     if (!currentEventId) return alert("Selecciona un evento");
     if (!selectedColor) return alert("Selecciona una categoría de suite");
 
+    const priceId = SUITE_PRICE_IDS[selectedColor];
+    if (!priceId || priceId.startsWith("REEMPLAZAR")) {
+      return alert("⚠️ Price ID de Stripe no configurado para esta categoría.");
+    }
+
     try {
-      console.log(`💳 Iniciando pago: Suite #${selectedNumber}, Evento: ${currentEventId}, Categoría: ${selectedColor}`);
+      console.log(`💳 Suite #${selectedNumber} | ${selectedColor} | PriceID: ${priceId}`);
       const response = await fetch(`${API_URL}/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
+          priceId,
           suiteNumber: selectedNumber.toString(),
           category: selectedColor,
           eventId: currentEventId,
           isTable: false
         }),
       });
-
       const session = await response.json();
-      if (session.error) {
-        alert(`Error: ${session.error}`);
-        return;
-      }
-      if (session.url) {
-        window.location.href = session.url;
-      } else {
-        alert("Error al procesar el pago");
-      }
+      if (session.error) { alert(`Error: ${session.error}`); return; }
+      if (session.url) { window.location.href = session.url; }
+      else { alert("Error al procesar el pago"); }
     } catch (error) {
       console.error("Error al procesar el pago:", error);
       alert("Error de conexión con el servidor");
     }
   };
 
+  // ✅ PAGO MESAS
   const handleTablePayment = async () => {
     if (!selectedTable) return alert("Por favor selecciona una mesa primero");
     if (!currentEventId) return alert("Selecciona un evento");
@@ -147,19 +155,17 @@ function MainLanding() {
 
     try {
       const internalCategory = CATEGORY_MAP[selectedTableCategory];
-      
       let finalPriceId = selectedTable.stripePriceId; 
 
       if (currentEventId === "20-feb-2026") {
-        if (internalCategory === "MesaVipGold") {
-            finalPriceId = "price_1T24IeRqCWGV92H11PBKlqAE"; 
-        } else if (internalCategory === "MesaVipSilver") {
-            finalPriceId = "price_1T24IPRqCWGV92H1XGbRpll4"; 
-        }
+        if (internalCategory === "MesaVipGold") finalPriceId = "price_1T24IeRqCWGV92H11PBKlqAE"; 
+        else if (internalCategory === "MesaVipSilver") finalPriceId = "price_1T24IPRqCWGV92H1XGbRpll4"; 
+      }
+      if (currentEventId === "26-jun-2026") {
+        if (internalCategory === "MesaVipGold") finalPriceId = "price_1T24IeRqCWGV92H11PBKlqAE"; // $600
       }
 
-      console.log(`💳 Iniciando pago: Mesa #${selectedTable.id}, Evento: ${currentEventId}, PriceID: ${finalPriceId}`);
-      
+      console.log(`💳 Mesa #${selectedTable.id} | ${currentEventId} | PriceID: ${finalPriceId}`);
       const response = await fetch(`${API_URL}/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -171,148 +177,210 @@ function MainLanding() {
           eventId: currentEventId
         }),
       });
-      
       const session = await response.json();
-      if (session.error) {
-        alert(`Error: ${session.error}`);
-        return;
-      }
-      if (session.url) {
-        window.location.href = session.url;
-      } else {
-        alert("Error al procesar el pago");
-      }
+      if (session.error) { alert(`Error: ${session.error}`); return; }
+      if (session.url) { window.location.href = session.url; }
+      else { alert("Error al procesar el pago"); }
     } catch (error) {
       console.error("Error al procesar el pago de la mesa:", error);
       alert("Error conectando con el servidor");
     }
   };
   
+  // ── SUITES ───────────────────────────────────────────────────────
   const suitesData = {
     "Verde Suite Gold": {
       color: "bg-[#7dbd7d]",
-      numeros: ["350", "332", "330", "326", "324", "316", "314", "312", "308", "306", "304", "302", "301", "305", "307", "309", "378"],
-      precioBase: 2500,
-      detalles: "10 tickets + 2 parking + Fast Pass",
+      numeros: Array.from({ length: 42 }, (_, i) => (i + 1).toString()),
+      precioBase: 2000,
+      detalles: "10 tickets incluidos · No incluye parking ni bebidas",
       icon: <Crown className="w-5 h-5 text-[#7dbd7d]" />
     },
     "Amarillo Suite Premium": {
       color: "bg-[#ffff00]",
-      numeros: ["372", "315"],
-      precioBase: 2000,
-      detalles: "20 tickets + 4 parking + Fast Pass",
+      numeros: Array.from({ length: 4 }, (_, i) => (i + 1).toString()),
+      precioBase: 4000,
+      detalles: "20 tickets incluidos · No incluye parking ni bebidas",
       icon: <Star className="w-5 h-5 text-yellow-400" />
     },
   };
 
+  // ── MESAS ─────────────────────────────────────────────────────────
+  // Nombre visual cambiado a "VIP TABLES" — backend sigue usando MesaVipGold via CATEGORY_MAP
   const tablesGroups = {
-    "MESAS GOLD": {
-      numeros: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10 , 11, 12, 13, 14, 15, 16, 17],
+    "VIP TABLES": {
+      numeros: Array.from({ length: 30 }, (_, i) => i + 1),
       icon: <Gem className="w-5 h-5 text-amber-500" />
-    },
-    "MESAS SILVER": {
-      numeros: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-      icon: <Users className="w-5 h-5 text-stone-400" />
     }
   };
 
   return (
     <div className="min-h-screen bg-[#060504] text-white font-sans selection:bg-amber-600 overflow-x-hidden">
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'py-4 bg-black/90 backdrop-blur-xl border-b border-white/10' : 'py-8 bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Logo" className={`rounded-full transition-all duration-500 border border-amber-600/30 ${scrolled ? 'h-10' : 'h-12'}`} />
-            <div className="flex flex-col">
-              <span className="font-black tracking-tighter text-lg md:text-xl uppercase leading-none">Gomez Western Wear</span>
-              <span className="text-amber-600 font-bold text-[10px] tracking-[0.3em] uppercase">Arena Exclusive</span>
+
+      {/* ── NAVBAR ─────────────────────────────────────────────── */}
+      <div className="fixed top-0 w-full z-50">
+        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-amber-600 to-transparent" />
+        <nav className={`transition-all duration-500 ${scrolled ? 'py-3 bg-black/95 backdrop-blur-xl border-b border-amber-600/20' : 'py-7 bg-transparent'}`}>
+          <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="p-[2px] rounded-full bg-gradient-to-br from-amber-600/60 to-amber-900/40">
+                <img src="/logo.jpg" alt="Logo" className={`rounded-full transition-all duration-500 ${scrolled ? 'h-9' : 'h-11'} block`} />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-black tracking-tighter text-lg md:text-xl uppercase leading-none text-white">Gomez Western Wear</span>
+                <span className="text-amber-500 font-bold text-[9px] tracking-[0.35em] uppercase mt-[2px]">Arena · Mesquite, TX</span>
+              </div>
+            </div>
+            <div className="hidden md:flex items-center gap-8 text-[10px] uppercase tracking-[0.2em] font-bold text-stone-400">
+              <a href="#eventos" className="hover:text-amber-500 transition-colors duration-300 relative group">
+                Eventos
+                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-amber-600 group-hover:w-full transition-all duration-300" />
+              </a>
+              <a href="#nosotros" className="hover:text-amber-500 transition-colors duration-300 relative group">
+                Nosotros
+                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-amber-600 group-hover:w-full transition-all duration-300" />
+              </a>
+              <a href="#eventos" className="relative overflow-hidden border border-amber-600/60 hover:border-amber-500 text-amber-400 hover:text-white px-7 py-2.5 rounded-full transition-all duration-300 group">
+                <span className="absolute inset-0 bg-amber-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <span className="relative">Próximos Eventos</span>
+              </a>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-[10px] uppercase tracking-[0.2em] font-bold text-stone-400">
-              <a href="#eventos" className="hover:text-amber-500 transition-colors">Eventos</a>
-              <a href="#nosotros" className="hover:text-amber-500 transition-colors">Nosotros</a>
-              {/* ✅ Botón cambiado para hacer scroll a eventos en lugar de abrir el modal */}
-              <a href="#eventos" className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2.5 rounded-full transition-all">Próximos Eventos</a>
-          </div>
-        </div>
-      </nav>
+        </nav>
+      </div>
 
-      <header className="relative z-10 pt-32 md:pt-48 pb-10 text-center animate-fade-in">
-        <h2 className="text-amber-500 font-bold tracking-[0.6em] uppercase text-[10px] md:text-xs mb-6 flex items-center justify-center gap-4">
-          <div className="h-[1px] w-8 bg-amber-600"></div>
-          Selección de Membresía Elite
-          <div className="h-[1px] w-8 bg-amber-600"></div>
-        </h2>
-        <h1 className="text-6xl md:text-9xl font-black leading-[0.8] uppercase tracking-tighter mb-8">
+      {/* ── HERO ────────────────────────────────────────────────── */}
+      <header className="relative z-10 pt-36 md:pt-52 pb-10 text-center animate-fade-in">
+        <div className="flex items-center justify-center gap-6 mb-8">
+          <div className="h-[1px] w-16 bg-gradient-to-r from-transparent to-amber-600/70" />
+          <p className="text-amber-500 font-bold tracking-[0.6em] uppercase text-[10px]">Selección de Membresía Elite</p>
+          <div className="h-[1px] w-16 bg-gradient-to-l from-transparent to-amber-600/70" />
+        </div>
+        <h1 className="text-6xl md:text-9xl font-black leading-[0.85] uppercase tracking-tighter mb-6">
           GOMEZ <span className="text-amber-600 italic">ARENA</span>
         </h1>
-        <p className="text-stone-400 text-sm md:text-xl font-light italic max-w-2xl mx-auto px-6">
-          "Bienvenido a Gómez Arena, aquí encontrarás la zona exclusiva para nuestros eventos, las suites están diseñadas para una experiencia inolvidable"
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <div className="h-[1px] w-12 bg-amber-800/50" />
+          <div className="w-1.5 h-1.5 bg-amber-600 rotate-45" />
+          <div className="h-[1px] w-24 bg-amber-700/60" />
+          <div className="w-1.5 h-1.5 bg-amber-600 rotate-45" />
+          <div className="h-[1px] w-12 bg-amber-800/50" />
+        </div>
+        <p className="text-stone-400 text-sm md:text-lg font-light italic max-w-xl mx-auto px-6 leading-relaxed">
+          "Bienvenido a Gómez Arena — la zona exclusiva donde cada suite está diseñada para una experiencia verdaderamente inolvidable"
         </p>
+        <div className="flex items-center justify-center gap-8 mt-10">
+          <div className="text-center">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-500 mb-1">Suites desde</p>
+            <p className="text-2xl font-black text-amber-500">$2,000 <span className="text-sm font-medium text-stone-400">USD</span></p>
+          </div>
+          <div className="w-[1px] h-10 bg-white/10" />
+          <div className="text-center">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-500 mb-1">Mesas desde</p>
+            <p className="text-2xl font-black text-amber-500">$600 <span className="text-sm font-medium text-stone-400">USD</span></p>
+          </div>
+          <div className="w-[1px] h-10 bg-white/10" />
+          <div className="text-center">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-500 mb-1">Capacidad</p>
+            <p className="text-2xl font-black text-white">10k+</p>
+          </div>
+        </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 space-y-32 mt-16 pb-20">
+
+        {/* VIDEO */}
         <section className="w-full">
           <div className="flex items-center gap-3 text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em] mb-8">
             <Play size={14} fill="currentColor"/> Vista Previa de la Arena
           </div>
-          <div className="relative rounded-[2.5rem] overflow-hidden border border-white/10 aspect-video shadow-2xl">
+          <div className="relative rounded-[2.5rem] overflow-hidden border border-amber-600/20 aspect-video shadow-2xl">
             <video src="/estadio-preview.mp4" autoPlay muted loop className="w-full h-full object-cover scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            <div className="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-amber-600/60 rounded-tl-lg" />
+            <div className="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-amber-600/60 rounded-tr-lg" />
+            <div className="absolute bottom-6 left-6 w-8 h-8 border-b-2 border-l-2 border-amber-600/60 rounded-bl-lg" />
+            <div className="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-amber-600/60 rounded-br-lg" />
           </div>
         </section>
 
-        {/* ✅ SECCIÓN DE EVENTOS ACTUALIZADA A "PRÓXIMAMENTE" */}
+        {/* ── EVENTOS ─────────────────────────────────────────── */}
         <section id="eventos" className="w-full text-center">
-          <div className="flex items-center justify-center gap-3 text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em] mb-10">
-            <Calendar size={16} /> Próximos Eventos
+          <div className="flex items-center justify-center gap-4 mb-3">
+            <div className="h-[1px] w-12 bg-amber-800/50" />
+            <Calendar size={14} className="text-amber-500" />
+            <span className="text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em]">Próximos Eventos</span>
+            <Calendar size={14} className="text-amber-500" />
+            <div className="h-[1px] w-12 bg-amber-800/50" />
           </div>
-          <div className="group relative rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl bg-stone-900/60 max-w-5xl mx-auto min-h-[400px] flex items-center justify-center">
-            <div className="relative z-10 flex flex-col items-center text-center p-8 md:p-20">
-              <Calendar size={48} className="text-stone-600 mb-6" />
-              <h4 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter leading-none mb-6 text-stone-500">PRÓXIMAMENTE</h4>
-              <p className="text-stone-400 text-sm md:text-xl uppercase tracking-wider font-light">
-                Nuevas fechas por confirmar.
-              </p>
+          <p className="text-stone-600 text-[9px] uppercase tracking-widest mb-10">Mesquite, TX · Gomez Western Wear Arena</p>
+          <div className="group relative rounded-[3rem] overflow-hidden border border-amber-600/25 shadow-2xl max-w-5xl mx-auto">
+            <img src="/evento-16.jpg" alt="JBF Nations Cup 2026" className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-[1.02]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 flex flex-col md:flex-row items-end md:items-center justify-between gap-6">
+              <div className="text-left">
+                <p className="text-amber-500 text-[9px] uppercase tracking-[0.4em] font-bold mb-2">Próximo Evento</p>
+                <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter leading-none text-white mb-2">JBF Nations Cup 2026</h3>
+                <div className="flex items-center gap-3 text-stone-300 text-xs">
+                  <Calendar size={12} className="text-amber-500" />
+                  <span>Viernes 26 de Junio, 2026</span>
+                  <span className="text-stone-600">·</span>
+                  <MapPin size={12} className="text-amber-500" />
+                  <span>Mesquite, TX</span>
+                </div>
+              </div>
+              <button
+                onClick={() => openReservationModal("26-jun-2026", "JBF Nations Cup 2026")}
+                className="shrink-0 bg-amber-600 hover:bg-amber-500 text-white font-black py-4 px-10 rounded-full transition-all shadow-xl uppercase tracking-widest text-xs whitespace-nowrap"
+              >
+                Reservar Suite
+              </button>
             </div>
+            <div className="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-amber-600/50 rounded-tl-lg pointer-events-none" />
+            <div className="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-amber-600/50 rounded-tr-lg pointer-events-none" />
           </div>
         </section>
 
-        <section id="nosotros" className="relative rounded-[4rem] overflow-hidden border border-white/5 bg-stone-900/40 backdrop-blur-sm p-8 md:p-20">
+        {/* ── NOSOTROS ────────────────────────────────────────── */}
+        <section id="nosotros" className="relative rounded-[4rem] overflow-hidden border border-amber-600/10 bg-[#0a0806] p-8 md:p-20">
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-600/30 to-transparent" />
+          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-600/20 to-transparent" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-8 text-left">
+              <p className="text-amber-700 text-[9px] uppercase tracking-[0.5em] font-bold">Nuestra Historia</p>
               <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none">
                 SOBRE <span className="text-amber-600">NOSOTROS</span>
               </h2>
-              <div className="h-1 w-24 bg-amber-600"></div>
+              <div className="flex items-center gap-3">
+                <div className="h-[2px] w-16 bg-amber-600" />
+                <div className="w-1.5 h-1.5 bg-amber-600 rotate-45" />
+              </div>
               <p className="text-stone-300 text-lg leading-relaxed italic font-light">
                 Gomez Western Wear Arena nació como un espacio único, diseñado para fusionar la elegancia moderna con el espíritu indomable de la cultura Western. Cada rincón de nuestra arena refleja un compromiso con la calidad y la hospitalidad de clase mundial.
               </p>
-
-              <div className="grid grid-cols-2 gap-8 pt-6">
+              <div className="grid grid-cols-2 gap-8 pt-6 border-t border-white/5">
                 <div>
                   <div className="text-amber-500 font-black text-4xl mb-1">10k+</div>
-                  <div className="text-stone-500 uppercase text-[10px] tracking-widest font-bold font-black">Capacidad Total</div>
+                  <div className="text-stone-500 uppercase text-[9px] tracking-widest font-bold">Capacidad Total</div>
                 </div>
                 <div>
                   <div className="text-amber-500 font-black text-4xl mb-1">50+</div>
-                  <div className="text-stone-500 uppercase text-[10px] tracking-widest font-bold font-black">Suites de Lujo</div>
+                  <div className="text-stone-500 uppercase text-[9px] tracking-widest font-bold">Suites de Lujo</div>
                 </div>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 gap-6">
-              <div className="bg-white/5 p-8 rounded-[2rem] border border-white/10 hover:bg-white/10 transition-colors group">
+            <div className="grid grid-cols-1 gap-5">
+              <div className="bg-black/40 p-8 rounded-[2rem] border border-amber-600/10 hover:border-amber-600/30 transition-all duration-500 group">
                 <div className="flex items-center gap-4 mb-4 text-amber-600">
-                  <Target size={28} />
-                  <h4 className="text-xl font-black uppercase italic">Nuestra Misión</h4>
+                  <Target size={24} />
+                  <h4 className="text-base font-black uppercase tracking-wider italic">Nuestra Misión</h4>
                 </div>
                 <p className="text-stone-400 leading-relaxed text-sm">Elevamos el estándar del entretenimiento Western, proporcionando una experiencia de hospitalidad inigualable que honra nuestras raíces mientras miramos hacia el futuro.</p>
               </div>
-
-              <div className="bg-white/5 p-8 rounded-[2rem] border border-white/10 hover:bg-white/10 transition-colors">
+              <div className="bg-black/40 p-8 rounded-[2rem] border border-amber-600/10 hover:border-amber-600/30 transition-all duration-500">
                 <div className="flex items-center gap-4 mb-4 text-amber-600">
-                  <Eye size={28} />
-                  <h4 className="text-xl font-black uppercase italic">Nuestra Visión</h4>
+                  <Eye size={24} />
+                  <h4 className="text-base font-black uppercase tracking-wider italic">Nuestra Visión</h4>
                 </div>
                 <p className="text-stone-400 leading-relaxed text-sm">Ser reconocidos como el epicentro global del estilo de vida Western, donde la exclusividad y la pasión se encuentran bajo un mismo techo.</p>
               </div>
@@ -320,75 +388,104 @@ function MainLanding() {
           </div>
         </section>
 
+        {/* GALERÍA */}
         <section className="w-full text-center space-y-12">
-            <div className="flex items-center justify-center gap-3 text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em]">
-              <Star size={16} fill="currentColor" /> Galería Exclusiva de Suites
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((num) => (
-                 <div key={num} className="group relative rounded-[2rem] overflow-hidden border border-white/10 aspect-[4/3] bg-stone-900 shadow-xl">
-                    <img src={`/suite-ejemplo${num}.jpg`} alt={`Suite ${num}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-100" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="text-white font-black text-xs uppercase tracking-[0.3em] border border-white/20 px-4 py-2 rounded-full">Ver Detalles</span>
-                    </div>
-                 </div>
-              ))}
-            </div>
+          <div className="flex items-center justify-center gap-4">
+            <div className="h-[1px] w-12 bg-amber-800/50" />
+            <Star size={14} className="text-amber-500" fill="currentColor" />
+            <span className="text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em]">Galería Exclusiva de Suites</span>
+            <Star size={14} className="text-amber-500" fill="currentColor" />
+            <div className="h-[1px] w-12 bg-amber-800/50" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((num) => (
+              <div key={num} className="group relative rounded-[2rem] overflow-hidden border border-amber-600/10 aspect-[4/3] bg-stone-900 shadow-xl hover:border-amber-600/30 transition-all duration-500">
+                <img src={`/suite-ejemplo${num}.jpg`} alt={`Suite ${num}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-100" />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="text-white font-black text-[10px] uppercase tracking-[0.3em] border border-amber-600/50 px-5 py-2.5 rounded-full">Ver Detalles</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
       </main>
 
+      {/* ── MODAL DE RESERVA ────────────────────────────────────── */}
       {selectedEvent && currentEventId && (
         <div className="fixed inset-0 z-[100] bg-black/98 backdrop-blur-2xl overflow-y-auto animate-fade-in p-4 md:p-10">
-          <div className="max-w-7xl mx-auto relative bg-stone-900/50 rounded-[3rem] border border-white/10 p-6 md:p-12 shadow-2xl">
-            <button onClick={closeReservationModal} className="absolute top-8 right-8 text-stone-500 hover:text-white transition-all hover:rotate-90"><X size={40} /></button>
+          <div className="max-w-7xl mx-auto relative bg-[#080604] rounded-[3rem] border border-amber-600/15 p-6 md:p-12 shadow-2xl">
+            <div className="absolute top-0 left-[10%] right-[10%] h-[1px] bg-gradient-to-r from-transparent via-amber-600/60 to-transparent rounded-full" />
             
-            <div className="mb-16">
-              <span className="text-amber-600 font-bold uppercase tracking-[0.4em] text-[10px]">Reservando para</span>
-              <h2 className="text-4xl md:text-6xl font-black uppercase italic mt-2">{selectedEvent}</h2>
-              <p className="text-stone-400 text-sm mt-2">{EVENTS[currentEventId]?.date} • {EVENTS[currentEventId]?.location}</p>
+            <button onClick={closeReservationModal} className="absolute top-8 right-8 text-stone-600 hover:text-amber-500 transition-all hover:rotate-90 duration-300">
+              <X size={36} />
+            </button>
+            
+            <div className="mb-14">
+              <span className="text-amber-600 font-bold uppercase tracking-[0.4em] text-[9px]">Reservando para</span>
+              <h2 className="text-4xl md:text-6xl font-black uppercase italic mt-2 leading-none">{selectedEvent}</h2>
+              <p className="text-stone-500 text-sm mt-3">{EVENTS[currentEventId]?.date} · {EVENTS[currentEventId]?.location}</p>
+              <div className="flex items-center gap-3 mt-5">
+                <div className="h-[1px] w-12 bg-amber-800/50" />
+                <div className="w-1 h-1 bg-amber-600 rotate-45" />
+                <div className="h-[1px] w-12 bg-amber-800/40" />
+              </div>
             </div>
             
             {loadingOccupancy && (
               <div className="text-center py-8">
-                <p className="text-amber-500 font-bold animate-pulse">Cargando disponibilidad...</p>
+                <p className="text-amber-500 font-bold animate-pulse text-[11px] uppercase tracking-widest">Cargando disponibilidad...</p>
               </div>
             )}
-            
+
+            {/* MAPA */}
             <div className="mb-20">
-              <div className="flex items-center gap-3 text-stone-400 font-bold text-[10px] uppercase tracking-[0.4em] mb-8">
-                <MapPin size={16} /> Mapa de Ubicaciones Nivel 300
+              <div className="flex items-center gap-3 text-stone-500 font-bold text-[10px] uppercase tracking-[0.4em] mb-8">
+                <MapPin size={14} className="text-amber-600" />
+                <span>Mapa de Ubicaciones · Suite Level</span>
               </div>
-              <div className="bg-black/50 p-4 rounded-[2.5rem] border border-white/5 shadow-inner">
-                <img src="/arena.jpg" alt="Mapa" className="w-full h-auto rounded-2xl shadow-2xl border border-white/10" />
+              <div className="bg-black/60 p-4 rounded-[2.5rem] border border-amber-600/10 shadow-inner">
+                <img src="/SUITES_21J.png" alt="Mapa Suites JBF Nations Cup 2026" className="w-full h-auto rounded-2xl shadow-2xl border border-white/5" />
               </div>
             </div>
 
+            {/* SUITE SELECTION */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
               <div className="lg:col-span-2 space-y-4">
-                <h3 className="text-white font-bold uppercase tracking-widest text-[11px] mb-8 flex items-center gap-2"><span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></span> 1. SUITE DE PREFERENCIA</h3>
+                <h3 className="text-stone-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-8 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" /> 1. Suite de Preferencia
+                </h3>
                 {Object.keys(suitesData).map((key) => (
                   <div key={key}>
                     <button 
                       onClick={() => { setSelectedColor(key); setSelectedNumber(""); }} 
-                      className={`w-full flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 ${selectedColor === key ? 'bg-amber-600 border-amber-400 translate-x-4 shadow-lg shadow-amber-600/20' : 'bg-white/5 border-white/5 text-stone-500 hover:bg-white/10'}`}
+                      className={`w-full flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 text-left
+                        ${selectedColor === key 
+                          ? 'bg-amber-600/10 border-amber-600/50 translate-x-2 shadow-lg shadow-amber-900/30' 
+                          : 'bg-white/3 border-white/5 hover:bg-white/6 hover:border-white/10'}`}
                     >
                       <div className="flex items-center gap-4">
                         {suitesData[key].icon}
-                        <div className="flex flex-col text-left">
-                          <span className="font-bold uppercase tracking-tight text-sm text-white">{key}</span>
-                          <span className="text-[10px] text-stone-400 font-medium italic">
-                            {key === "Verde Suite Gold" ? "10 ACCESOS + 2 PARKING + FAST PASS" : "20 ACCESOS + 2 PARKING + FAST PASS"}
+                        <div className="flex flex-col">
+                          <span className="font-black uppercase tracking-tight text-sm text-white">{key}</span>
+                          <span className="text-amber-500 font-black text-lg mt-0.5">
+                            ${suitesData[key].precioBase.toLocaleString()} <span className="text-[10px] text-stone-500 font-medium">USD</span>
+                          </span>
+                          <span className="text-[9px] text-stone-500 font-medium uppercase tracking-wider mt-0.5">
+                            {key === "Verde Suite Gold" ? "10 accesos · No incluye parking ni bebidas" : "20 accesos · No incluye parking ni bebidas"}
                           </span>
                         </div>
                       </div>
-                      <ArrowRight size={16} className={selectedColor === key ? 'opacity-100' : 'opacity-20'} />
+                      <ArrowRight size={14} className={`transition-opacity ${selectedColor === key ? 'opacity-100 text-amber-500' : 'opacity-20'}`} />
                     </button>
-                    <p className="text-[9px] text-stone-500 mt-2 mb-6 px-2 italic uppercase">servicio de comida disponible (no incluye comida y bebida el costo)</p>
+                    <p className="text-[9px] text-stone-600 mt-2 mb-5 px-2 italic uppercase tracking-wide">
+                      * No incluye parking ni bebidas. Se abonan por separado.
+                    </p>
                   </div>
                 ))}
               </div>
-              <div className={`lg:col-span-3 bg-black/40 p-8 md:p-12 rounded-[3rem] border border-white/5 transition-all duration-700 ${!selectedColor ? 'opacity-50 grayscale' : 'opacity-100'}`}>
-                <h3 className="text-white font-bold uppercase tracking-widest text-[11px] mb-8">2. Disponibilidad de Suites</h3>
+
+              <div className={`lg:col-span-3 bg-black/50 p-8 md:p-12 rounded-[3rem] border border-amber-600/8 transition-all duration-700 ${!selectedColor ? 'opacity-40 grayscale' : 'opacity-100'}`}>
+                <h3 className="text-stone-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-8">2. Disponibilidad de Suites</h3>
                 <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                   {selectedColor && suitesData[selectedColor].numeros.map((num) => {
                     const isOcupada = isSuiteOccupied(num, selectedColor, currentEventId);
@@ -398,8 +495,11 @@ function MainLanding() {
                         disabled={isOcupada} 
                         onClick={() => setSelectedNumber(num)} 
                         className={`aspect-square flex flex-col items-center justify-center rounded-xl font-black text-xs transition-all border 
-                          ${isOcupada ? 'bg-red-900/40 border-red-500/50 text-red-500 cursor-not-allowed grayscale' : 
-                            selectedNumber === num ? 'bg-white text-black border-white shadow-xl scale-110' : 'bg-stone-900/60 border-white/5 text-stone-500 hover:text-white'}`}
+                          ${isOcupada 
+                            ? 'bg-red-900/30 border-red-800/40 text-red-600/60 cursor-not-allowed' 
+                            : selectedNumber === num 
+                              ? 'bg-amber-600 border-amber-500 text-white shadow-xl shadow-amber-900/40 scale-110' 
+                              : 'bg-stone-900/60 border-white/5 text-stone-500 hover:text-amber-400 hover:border-amber-700/30'}`}
                       >
                         {num}
                       </button>
@@ -409,112 +509,137 @@ function MainLanding() {
               </div>
             </div>
 
+            {/* SUITE CONFIRMADA */}
             {selectedNumber && (
-              <div className="mt-16 animate-slide-up"><div className="bg-gradient-to-r from-amber-600 via-amber-700 to-amber-900 p-[1px] rounded-[3rem] shadow-2xl"><div className="bg-[#0c0a09] rounded-[2.9rem] p-8 md:p-12 flex flex-col md:flex-row justify-between items-center gap-10"><div className="text-center md:text-left"><div className="flex items-center justify-center md:justify-start gap-2 text-amber-500 text-[10px] font-black uppercase tracking-[0.4em] mb-4"><CheckCircle2 size={14}/> Suite Seleccionada</div><h4 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic text-white leading-none">#{selectedNumber}</h4><p className="text-stone-300 mt-4 italic font-bold text-lg">{suitesData[selectedColor].detalles}</p></div><div className="flex flex-col items-center md:items-end"><button onClick={handlePayment} className="bg-amber-600 hover:bg-amber-500 text-white font-black py-5 px-16 rounded-full transition-all shadow-xl uppercase tracking-widest text-xs">Confirmar Reserva</button></div></div></div></div>
+              <div className="mt-16 animate-slide-up">
+                <div className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800 p-[1px] rounded-[3rem] shadow-2xl shadow-amber-900/30">
+                  <div className="bg-[#0c0a08] rounded-[2.9rem] p-8 md:p-12 flex flex-col md:flex-row justify-between items-center gap-10">
+                    <div className="text-center md:text-left">
+                      <div className="flex items-center justify-center md:justify-start gap-2 text-amber-500 text-[9px] font-black uppercase tracking-[0.4em] mb-4">
+                        <CheckCircle2 size={12}/> Suite Seleccionada
+                      </div>
+                      <h4 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic text-white leading-none">#{selectedNumber}</h4>
+                      <p className="text-stone-300 mt-3 italic text-base">{suitesData[selectedColor].detalles}</p>
+                      <p className="text-amber-500 font-black text-2xl mt-2">
+                        ${suitesData[selectedColor].precioBase.toLocaleString()} <span className="text-sm text-stone-400 font-medium">USD</span>
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center md:items-end gap-3">
+                      <button onClick={handlePayment} className="relative overflow-hidden bg-amber-600 hover:bg-amber-500 text-white font-black py-5 px-14 rounded-full transition-all shadow-xl uppercase tracking-widest text-xs">
+                        Confirmar Reserva
+                      </button>
+                      <p className="text-[9px] text-stone-600 uppercase tracking-wider">Pago seguro · Stripe</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
-            {/* --- SECCIÓN 3: MESAS VIP --- */}
-            <div className="mt-20 pt-10 border-t border-white/10">
+            {/* ── VIP TABLES ─────────────────────────────────────── */}
+            <div className="mt-20 pt-10 border-t border-amber-600/10">
               <div className="flex items-center gap-3 text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em] mb-2">
-                <Gem size={16} /> 3. ¿Deseas agregar una Mesa VIP?
+                <Gem size={14} /> 3. ¿Deseas agregar una VIP Table?
               </div>
-              <p className="text-stone-400 text-[11px] font-medium mb-8 ml-7 uppercase tracking-wider">
-                * LA MESA INCLUYE <span className="text-white font-black">4 ASIENTOS</span>. NO INCLUYE BOLETO DE ENTRADA NI BEBIDAS. EL PAGO SE ABONA POR SEPARADO.
+              <p className="text-stone-500 text-[10px] font-medium mb-8 ml-6 uppercase tracking-wider">
+                * Incluye <span className="text-white font-black">4 asientos</span>. No incluye boleto de entrada, parking ni bebidas. El pago se abona por separado.
               </p>
               
-              {["20-feb-2026"].includes(currentEventId) ? (
+              {["20-feb-2026", "26-jun-2026"].includes(currentEventId) ? (
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
                   <div className="lg:col-span-2 space-y-4">
-                    <h3 className="text-white font-bold uppercase tracking-widest text-[11px] mb-8 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></span> TIPO DE MESA
+                    <h3 className="text-stone-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-8 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" /> Tipo de Mesa
                     </h3>
                     {Object.keys(tablesGroups).map((key) => (
                       <button 
                         key={key} 
                         onClick={() => { setSelectedTableCategory(key); setSelectedTable(null); }} 
-                        className={`w-full flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 ${selectedTableCategory === key ? 'bg-amber-600 border-amber-400 translate-x-4 shadow-lg shadow-amber-600/20' : 'bg-white/5 border-white/5 text-stone-500 hover:bg-white/10'}`}
+                        className={`w-full flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 text-left
+                          ${selectedTableCategory === key 
+                            ? 'bg-amber-600/10 border-amber-600/50 translate-x-2 shadow-lg shadow-amber-900/30' 
+                            : 'bg-white/3 border-white/5 hover:bg-white/6 hover:border-white/10'}`}
                       >
                         <div className="flex items-center gap-4">
                           {tablesGroups[key].icon}
-                          <span className="font-bold uppercase tracking-tight text-sm text-white">{key}</span>
+                          <div className="flex flex-col">
+                            <span className="font-bold uppercase tracking-tight text-sm text-white">{key}</span>
+                            <span className="text-[9px] text-stone-500 uppercase tracking-wider mt-0.5">4 asientos · No incluye bebidas</span>
+                          </div>
                         </div>
-                        <ArrowRight size={16} className={selectedTableCategory === key ? 'opacity-100' : 'opacity-20'} />
+                        <ArrowRight size={14} className={`transition-opacity ${selectedTableCategory === key ? 'opacity-100 text-amber-500' : 'opacity-20'}`} />
                       </button>
                     ))}
                   </div>
 
-                  <div className={`lg:col-span-3 bg-black/40 p-8 rounded-[3rem] border border-white/5 transition-all duration-700 ${!selectedTableCategory ? 'opacity-50 grayscale' : 'opacity-100'}`}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="rounded-2xl overflow-hidden border border-white/10 shadow-lg">
-                          <img src="/mesas15feb.jpg" alt="Mapa Mesas" className="w-full h-auto opacity-90" />
-                        </div>
-                        <div className="space-y-6">
-                          <label className="text-[10px] text-stone-500 uppercase font-bold tracking-widest">Selecciona Número</label>
-                          <select 
-                            disabled={!selectedTableCategory}
-                            onChange={(e) => {
-                              const idVal = parseInt(e.target.value);
-                              if(!idVal) { setSelectedTable(null); return; }
-                              
-                              const internalCategory = CATEGORY_MAP[selectedTableCategory];
-                              let mesa = vipTables.find(t => t.id === idVal && t.category === internalCategory);
-                              
-                              if (mesa) {
-                                mesa = { ...mesa }; 
-                                if (internalCategory === "MesaVipGold") mesa.price = 600;
-                                if (internalCategory === "MesaVipSilver") mesa.price = 500;
-                              }
-                              
-                              setSelectedTable(mesa);
-                            }}
-                            className="w-full bg-stone-900 border border-white/10 p-4 rounded-xl text-white font-bold outline-none focus:border-amber-600 transition-all cursor-pointer"
-                          >
-                            <option value="">Elegir mesa...</option>
-                            {selectedTableCategory && tablesGroups[selectedTableCategory].numeros.map(n => {
-                              const internalCategory = CATEGORY_MAP[selectedTableCategory];
-                              const tInfo = vipTables.find(vt => vt.id === n && vt.category === internalCategory);
-                              const estaOcupada = isTableOccupied(n.toString(), selectedTableCategory);
-                              
-                              let displayPrice = tInfo?.price;
-                              if (internalCategory === "MesaVipGold") displayPrice = 600;
-                              if (internalCategory === "MesaVipSilver") displayPrice = 500;
-
-                              return (
-                                <option key={`${selectedTableCategory}-${n}`} value={n} disabled={estaOcupada}>
-                                  {estaOcupada ? `Mesa #${n} (OCUPADA)` : `Mesa #${n} - ${displayPrice} USD`}
-                                </option>
-                              );
-                            })}
-                          </select>
-                          {selectedTable && (
-                            <div className="p-6 bg-amber-600/10 border border-amber-600/20 rounded-2xl animate-fade-in text-left">
-                              <p className="text-amber-500 text-[10px] font-black uppercase tracking-widest mb-1">Mesa #{selectedTable.id} seleccionada</p>
-                              <p className="text-white text-2xl font-black">${selectedTable.price} USD</p>
-                              <p className="text-stone-400 text-[10px] uppercase font-bold">Mesa para 4 Personas</p>
-                            </div>
-                          )}
-                        </div>
+                  <div className={`lg:col-span-3 bg-black/50 p-8 rounded-[3rem] border border-amber-600/8 transition-all duration-700 ${!selectedTableCategory ? 'opacity-40 grayscale' : 'opacity-100'}`}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="rounded-2xl overflow-hidden border border-amber-600/15 shadow-lg">
+                        <img src="/mapa-mesas-jbf.jpg" alt="Mapa VIP Tables" className="w-full h-auto opacity-90" />
                       </div>
+                      <div className="space-y-6">
+                        <label className="text-[10px] text-stone-500 uppercase font-bold tracking-widest">Selecciona Número</label>
+                        <select 
+                          disabled={!selectedTableCategory}
+                          onChange={(e) => {
+                            const idVal = parseInt(e.target.value);
+                            if (!idVal) { setSelectedTable(null); return; }
+                            const internalCategory = CATEGORY_MAP[selectedTableCategory];
+                            let mesa = vipTables.find(t => t.id === idVal && t.category === internalCategory);
+                            if (!mesa) {
+                              mesa = { id: idVal, category: internalCategory };
+                            } else {
+                              mesa = { ...mesa };
+                            }
+                            mesa.price = 600;
+                            setSelectedTable(mesa);
+                          }}
+                          className="w-full bg-stone-900 border border-amber-600/20 p-4 rounded-xl text-white font-bold outline-none focus:border-amber-600 transition-all cursor-pointer"
+                        >
+                          <option value="">Elegir mesa...</option>
+                          {selectedTableCategory && tablesGroups[selectedTableCategory].numeros.map(n => {
+                            const estaOcupada = isTableOccupied(n.toString(), selectedTableCategory);
+                            return (
+                              <option key={`${selectedTableCategory}-${n}`} value={n} disabled={estaOcupada}>
+                                {estaOcupada ? `Table #${n} (OCCUPIED)` : `Table #${n} — $600 USD`}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        {selectedTable && (
+                          <div className="p-6 bg-amber-600/8 border border-amber-600/20 rounded-2xl animate-fade-in text-left">
+                            <p className="text-amber-500 text-[9px] font-black uppercase tracking-widest mb-1">VIP Table #{selectedTable.id} seleccionada</p>
+                            <p className="text-white text-3xl font-black">${selectedTable.price} <span className="text-sm text-stone-400 font-medium">USD</span></p>
+                            <p className="text-stone-500 text-[9px] uppercase font-bold tracking-wider mt-1">4 asientos · No incluye bebidas</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="bg-amber-600/10 border border-amber-600/30 rounded-2xl p-8 text-center">
-                  <p className="text-amber-500 font-bold uppercase tracking-widest">Selecciona un evento válido para ver las mesas</p>
+                <div className="bg-amber-600/5 border border-amber-600/20 rounded-2xl p-8 text-center">
+                  <p className="text-amber-700 font-bold uppercase tracking-widest text-[11px]">Selecciona un evento válido para ver las mesas</p>
                 </div>
               )}
 
-              {selectedTable && ["20-feb-2026"].includes(currentEventId) && (
+              {selectedTable && ["20-feb-2026", "26-jun-2026"].includes(currentEventId) && (
                 <div className="mt-16 animate-slide-up">
-                  <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-amber-900 p-[1px] rounded-[3rem] shadow-2xl">
-                    <div className="bg-[#0c0a09] rounded-[2.9rem] p-8 md:p-12 flex flex-col md:flex-row justify-between items-center gap-10">
+                  <div className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800 p-[1px] rounded-[3rem] shadow-2xl shadow-amber-900/30">
+                    <div className="bg-[#0c0a08] rounded-[2.9rem] p-8 md:p-12 flex flex-col md:flex-row justify-between items-center gap-10">
                       <div className="text-center md:text-left">
-                        <div className="flex items-center justify-center md:justify-start gap-2 text-amber-500 text-[10px] font-black uppercase tracking-[0.4em] mb-4">
-                          <CheckCircle2 size={14}/> {selectedTableCategory} Seleccionada
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-amber-500 text-[9px] font-black uppercase tracking-[0.4em] mb-4">
+                          <CheckCircle2 size={12}/> VIP Table Seleccionada
                         </div>
                         <h4 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic text-white leading-none">#{selectedTable.id}</h4>
-                        <p className="text-stone-300 mt-4 italic font-bold text-lg">${selectedTable.price} USD - Incluye 4 asientos</p>
+                        <p className="text-amber-500 font-black text-2xl mt-3">${selectedTable.price} <span className="text-sm text-stone-400 font-medium">USD</span></p>
+                        <p className="text-stone-400 text-sm italic mt-1">4 asientos · No incluye bebidas</p>
                       </div>
-                      <button onClick={handleTablePayment} className="bg-amber-600 hover:bg-amber-500 text-white font-black py-5 px-16 rounded-full transition-all shadow-xl uppercase tracking-widest text-xs">Confirmar Reserva</button>
+                      <div className="flex flex-col items-center gap-3">
+                        <button onClick={handleTablePayment} className="bg-amber-600 hover:bg-amber-500 text-white font-black py-5 px-14 rounded-full transition-all shadow-xl uppercase tracking-widest text-xs">
+                          Confirmar Reserva
+                        </button>
+                        <p className="text-[9px] text-stone-600 uppercase tracking-wider">Pago seguro · Stripe</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -524,16 +649,46 @@ function MainLanding() {
         </div>
       )}
 
-      <footer className="w-full py-10 border-t border-white/5 bg-black/20 mt-10">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-4">
-          <div className="flex flex-col items-center">
-            <span className="text-amber-500 font-bold uppercase tracking-[0.3em] text-[10px] mb-1">Contacto Oficial</span>
-            <a href="mailto:gomezwwarena@gmail.com" className="text-white font-medium hover:text-amber-400 transition-colors">gomezwwarena@gmail.com</a>
+      {/* ── FOOTER ──────────────────────────────────────────────── */}
+      <footer className="w-full mt-10 border-t border-amber-600/15 bg-[#040302]">
+        <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-amber-700/40 to-transparent" />
+        <div className="max-w-7xl mx-auto px-6 py-14">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <img src="/logo.jpg" alt="Logo" className="h-9 w-9 rounded-full border border-amber-600/30" />
+                <div>
+                  <p className="text-white font-black uppercase tracking-tight text-sm leading-none">Gomez Western Wear</p>
+                  <p className="text-amber-600 text-[9px] uppercase tracking-[0.3em] font-bold mt-0.5">Arena Exclusive</p>
+                </div>
+              </div>
+              <p className="text-stone-600 text-xs leading-relaxed italic max-w-[220px]">More than a venue. It's a destination.</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <p className="text-amber-700 text-[9px] uppercase tracking-[0.4em] font-bold mb-1">Venue</p>
+              <p className="text-stone-500 text-xs">Mesquite, TX</p>
+              <p className="text-stone-500 text-xs">Capacidad 10,000+ personas</p>
+              <p className="text-stone-500 text-xs">50+ Suites de lujo</p>
+              <p className="text-stone-500 text-xs">VIP Tables disponibles</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <p className="text-amber-700 text-[9px] uppercase tracking-[0.4em] font-bold mb-1">Contacto Oficial</p>
+              <a href="mailto:gomezwwarena@gmail.com" className="text-stone-400 hover:text-amber-400 transition-colors text-xs">gomezwwarena@gmail.com</a>
+              <a href="https://wa.me/14692168553" target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-amber-400 transition-colors text-xs">WhatsApp: +1 (469) 216-8553</a>
+            </div>
           </div>
-          <p className="text-stone-600 text-[9px] uppercase tracking-widest">© 2026 GOMEZ ARENA - Mesquite, TX</p>
+          <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-3">
+            <p className="text-stone-700 text-[9px] uppercase tracking-widest">© 2026 Gomez Arena — Mesquite, TX. All rights reserved.</p>
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-1 bg-amber-800 rotate-45" />
+              <p className="text-stone-700 text-[9px] uppercase tracking-widest">Est. Mesquite, TX</p>
+              <div className="w-1 h-1 bg-amber-800 rotate-45" />
+            </div>
+          </div>
         </div>
       </footer>
 
+      {/* WhatsApp flotante */}
       <a href="https://wa.me/14692168553" target="_blank" rel="noopener noreferrer" className="fixed bottom-8 right-8 z-[9999] bg-[#25D366] p-4 rounded-full shadow-2xl hover:scale-110 transition-transform duration-300 flex items-center justify-center group">
         <svg viewBox="0 0 24 24" width="32" height="32" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.938 3.659 1.432 5.631 1.433h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
       </a>
@@ -544,11 +699,11 @@ function MainLanding() {
 function App() {
   return (
     <Router>
-            <Routes>
-              <Route path="/" element={<MainLanding />} />
-              <Route path="/success" element={<Success />} />
-              <Route path="/admin-kirk" element={<AdminDashboard />} />
-            </Routes>
+      <Routes>
+        <Route path="/" element={<MainLanding />} />
+        <Route path="/success" element={<Success />} />
+        <Route path="/admin-kirk" element={<AdminDashboard />} />
+      </Routes>
     </Router>
   );
 }

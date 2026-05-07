@@ -2,15 +2,75 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    
     <link rel="icon" type="image/jpeg" href="/logo.jpg" />
-    
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
     <title>GOMEZ WESTERN WEAR ARENA | Suites</title>
   </head>
   <body>
+    <!-- Particulas doradas de fondo -->
+    <div id="particles-bg"></div>
+
+    <!-- Cursor personalizado -->
+    <div id="custom-cursor"></div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <script>
+      // ── CUSTOM CURSOR ────────────────────────────────────────
+      const cursor = document.getElementById('custom-cursor');
+      let mx = -100, my = -100, cx = -100, cy = -100;
+
+      document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+      (function animateCursor() {
+        cx += (mx - cx) * 0.16;
+        cy += (my - cy) * 0.16;
+        cursor.style.left = cx + 'px';
+        cursor.style.top  = cy + 'px';
+        requestAnimationFrame(animateCursor);
+      })();
+
+      // Expandir cursor sobre interactivos
+      function bindCursor(el) {
+        if (el._cursorBound) return;
+        el._cursorBound = true;
+        el.addEventListener('mouseenter', () => cursor.classList.add('hovering'));
+        el.addEventListener('mouseleave', () => cursor.classList.remove('hovering'));
+      }
+      document.querySelectorAll('a, button, [role="button"], select').forEach(bindCursor);
+      new MutationObserver(() => {
+        document.querySelectorAll('a, button, [role="button"], select').forEach(bindCursor);
+      }).observe(document.body, { childList: true, subtree: true });
+
+      // ── SCROLL REVEAL ────────────────────────────────────────
+      const revealObs = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('visible');
+            revealObs.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      // Observar secciones al cargar React
+      function initReveal() {
+        document.querySelectorAll('section, footer').forEach((el, i) => {
+          if (!el._revealBound) {
+            el._revealBound = true;
+            el.classList.add('reveal');
+            el.style.transitionDelay = (i * 0.07) + 's';
+            revealObs.observe(el);
+          }
+        });
+      }
+
+      // Esperar a que React monte y luego observar
+      setTimeout(initReveal, 400);
+      new MutationObserver(initReveal).observe(
+        document.getElementById('root'),
+        { childList: true, subtree: true }
+      );
+    </script>
   </body>
 </html>
