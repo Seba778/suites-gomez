@@ -157,11 +157,11 @@ function MainLanding() {
       let finalPriceId = selectedTable.stripePriceId; 
 
       if (currentEventId === "20-feb-2026") {
-        if (internalCategory === "MesaVipGold") finalPriceId = "price_1T24IeRqCWGV92H11PBKlqAE"; 
+        if (internalCategory === "MesaVipGold") finalPriceId = "price_1T241eRqCWGV92H11PBKIqAE"; 
         else if (internalCategory === "MesaVipSilver") finalPriceId = "price_1T24IPRqCWGV92H1XGbRpll4"; 
       }
       if (currentEventId === "26-jun-2026") {
-        if (internalCategory === "MesaVipGold") finalPriceId = "price_1T24IeRqCWGV92H11PBKlqAE"; // $600
+        if (internalCategory === "MesaVipGold") finalPriceId = "price_1T241eRqCWGV92H11PBKIqAE"; // $600
       }
 
       console.log(`💳 Mesa #${selectedTable.id} | ${currentEventId} | PriceID: ${finalPriceId}`);
