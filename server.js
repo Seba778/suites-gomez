@@ -4,7 +4,6 @@ import Stripe from 'stripe';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import nodemailer from 'nodemailer';
-import SUITES_DATA from './configSuites.js';
 
 console.log("🔑 CLAVE QUE ESTOY USANDO:", process.env.STRIPE_SECRET_KEY);
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -180,15 +179,12 @@ app.post('/create-checkout-session', async (req, res) => {
     let metadataNumber = "";
 
     if (isTable) {
-      
-      let finalPriceId = priceId; 
+
+      let finalPriceId = priceId;
 
       if (eventId === "20-feb-2026") {
-          if (category === "MesaVipGold") {
-              finalPriceId = "price_1T24leRqCWGV92H11PBKIqAE"; // ✅ Gold $600
-          } else if (category === "MesaVipSilver") {
-              finalPriceId = "price_1T24lPRqCWGV92H1XGbRpll4"; // ✅ Silver $500
-          }
+        if (category === "MesaVipGold") finalPriceId = "price_1T24leRqCWGV92H11PBKIqAE";
+        else if (category === "MesaVipSilver") finalPriceId = "price_1T24lPRqCWGV92H1XGbRpll4";
       }
 
       if (!finalPriceId || !category) return res.status(400).json({ error: "Faltan datos de mesa o precio incorrecto" });
@@ -205,16 +201,11 @@ app.post('/create-checkout-session', async (req, res) => {
       metadataNumber = tableNumber.toString();
 
     } else {
-      if (!suiteNumber) return res.status(400).json({ error: "Falta número de suite" });
 
-      let categoriaSuite = null;
-      for (const color in SUITES_DATA) {
-        if (SUITES_DATA[color].numeros.map(String).includes(suiteNumber.toString())) {
-          categoriaSuite = SUITES_DATA[color];
-          break;
-        }
-      }
-      if (!categoriaSuite) return res.status(400).json({ error: "Suite no encontrada" });
+      // ✅ FIX: Usa el priceId enviado desde el frontend directamente
+      // Ya no depende de configSuites.js ni de nombres de categoría viejos
+      if (!suiteNumber) return res.status(400).json({ error: "Falta número de suite" });
+      if (!priceId) return res.status(400).json({ error: "Falta priceId de suite" });
 
       const conflicto = await Suite.findOne({
         numero: suiteNumber.toString(),
@@ -224,7 +215,7 @@ app.post('/create-checkout-session', async (req, res) => {
       });
       if (conflicto) return res.status(409).json({ error: `Suite #${suiteNumber} ya reservada` });
 
-      lineItem = { price: categoriaSuite.price_id.trim(), quantity: 1 };
+      lineItem = { price: priceId.trim(), quantity: 1 };
       metadataNumber = suiteNumber.toString();
     }
 
@@ -252,9 +243,8 @@ app.post('/create-checkout-session', async (req, res) => {
 });
 
 // ==================================================================
-// 🔐 ZONA ADMIN (Añadido sin tocar el resto del código)
+// 🔐 ZONA ADMIN
 // ==================================================================
-
 app.post('/api/admin/toggle', async (req, res) => {
   const { adminKey, type, numero, eventId, category } = req.body;
 
@@ -286,11 +276,9 @@ app.post('/api/admin/toggle', async (req, res) => {
           error: `⚠️ CUIDADO: Esta unidad fue comprada por un cliente real (${item.clientEmail}). No se puede borrar desde aquí.` 
         });
       }
-
       await Model.findOneAndDelete(query);
       console.log(`✅ Admin liberó: ${type} ${numero} (${eventId})`);
       return res.json({ status: 'disponible', message: 'Unidad liberada correctamente' });
-
     } else {
       await Model.create({
         ...query,
