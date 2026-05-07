@@ -183,7 +183,7 @@ app.post('/create-checkout-session', async (req, res) => {
       let finalPriceId = priceId;
 
       if (eventId === "20-feb-2026") {
-        if (category === "MesaVipGold") finalPriceId = "price_1T241eRqCWGV92H11PBKIqAE";
+        if (category === "MesaVipGold") finalPriceId = "price_1TUYkVRqCWGV92H17lBYluu6";
         else if (category === "MesaVipSilver") finalPriceId = "price_1T24IPRqCWGV92H1XGbRpll4";
       }
 
