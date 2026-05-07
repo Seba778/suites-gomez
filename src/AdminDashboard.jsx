@@ -1,38 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Lock, Unlock, AlertTriangle, Calendar, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Lock, Unlock, Calendar } from 'lucide-react';
 
-// --- TUS DATOS REALES ---
 const API_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:4000'
   : 'https://suites-gomez-production.up.railway.app';
 
-// CAMBIO 1: Agregado el evento 26-jun-2026
+// Solo el evento activo
 const EVENTS = [
-  { id: "15-feb-2026", name: "15 Feb - Primer Jaripeo" },
-  { id: "20-feb-2026", name: "20 Feb - Alameños" },
   { id: "26-jun-2026", name: "26 Jun - JBF Nations Cup 2026" }
 ];
 
-// CAMBIO 2: Eliminado MESAS SILVER — solo existe MesaVipGold
+// VIP TABLES → MesaVipGold (backend intacto)
 const CATEGORY_MAP = {
-  "MESAS GOLD": "MesaVipGold"
+  "VIP TABLES": "MesaVipGold"
 };
 
+// Suites con numeración secuencial
 const suitesData = {
-  "Verde Suite Gold": ["350", "332", "330", "326", "324", "316", "314", "312", "308", "306", "304", "302", "301", "305", "307", "309", "378"],
-  "Amarillo Suite Premium": ["372", "315"]
+  "Verde Suite Gold":       Array.from({ length: 42 }, (_, i) => (i + 1).toString()), // 1-42 · $2,000
+  "Amarillo Suite Premium": Array.from({ length: 4 },  (_, i) => (i + 1).toString()), // 1-4  · $4,000
 };
 
-// CAMBIO 3: MESAS GOLD del 1 al 30 — MESAS SILVER eliminada
+// VIP Tables 1-30
 const tablesGroups = {
-  "MESAS GOLD": Array.from({ length: 30 }, (_, i) => i + 1)
+  "VIP TABLES": Array.from({ length: 30 }, (_, i) => i + 1)
 };
 
 export default function AdminDashboard() {
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(EVENTS[0].id);
-  const [activeTab, setActiveTab] = useState('suites'); // 'suites' | 'mesas'
+  const [activeTab, setActiveTab] = useState('suites');
   const [occupiedData, setOccupiedData] = useState({ suites: [], mesas: [] });
   const [loading, setLoading] = useState(false);
 
@@ -67,8 +65,7 @@ export default function AdminDashboard() {
   const toggleItem = async (type, numero, category) => {
     const internalCategory = type === 'table' ? CATEGORY_MAP[category] : category;
     const isOccupied = checkOccupied(type, numero, category);
-    
-    if (isOccupied && !window.confirm(`¿Seguro que quieres liberar ${type === 'suite' ? 'Suite' : 'Mesa'} #${numero}?`)) return;
+    if (isOccupied && !window.confirm(`¿Seguro que querés liberar ${type === 'suite' ? 'Suite' : 'Table'} #${numero}?`)) return;
 
     try {
       const res = await fetch(`${API_URL}/api/admin/toggle`, {
@@ -82,14 +79,9 @@ export default function AdminDashboard() {
           category: internalCategory
         })
       });
-
       const json = await res.json();
-      
-      if (!res.ok) {
-        alert("Error: " + json.error);
-      } else {
-        fetchOccupied();
-      }
+      if (!res.ok) alert("Error: " + json.error);
+      else fetchOccupied();
     } catch (error) {
       alert("Error de red");
     }
@@ -98,18 +90,15 @@ export default function AdminDashboard() {
   const checkOccupied = (type, numStr, category) => {
     const list = type === 'suite' ? occupiedData.suites : occupiedData.mesas;
     const internalCat = type === 'table' ? CATEGORY_MAP[category] : category;
-    return list.some(item => 
-      item.numero === numStr.toString() && item.category === internalCat
-    );
+    return list.some(item => item.numero === numStr.toString() && item.category === internalCat);
   };
 
-  // Contadores para el resumen del evento
   const totalSuites = Object.values(suitesData).flat().length;
-  const totalMesas = Object.values(tablesGroups).flat().length;
+  const totalMesas  = Object.values(tablesGroups).flat().length;
   const ocupadasSuites = occupiedData.suites?.length || 0;
-  const ocupadasMesas = occupiedData.mesas?.length || 0;
+  const ocupadasMesas  = occupiedData.mesas?.length  || 0;
 
-  // --- RENDER LOGIN ---
+  // ── LOGIN ──────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-stone-900 flex items-center justify-center p-4">
@@ -132,7 +121,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // --- RENDER DASHBOARD ---
+  // ── DASHBOARD ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0c0a09] text-white p-4 md:p-8 font-sans">
       <div className="max-w-7xl mx-auto">
@@ -146,7 +135,7 @@ export default function AdminDashboard() {
               <p className="text-stone-400 text-xs tracking-widest">Gomez Western Wear Arena</p>
             </div>
           </div>
-          
+          {/* Selector de evento — queda para futuras fechas */}
           <div className="flex items-center gap-4 bg-stone-900 p-2 rounded-2xl border border-white/10">
             <Calendar className="text-amber-600 ml-2" />
             <select 
@@ -161,7 +150,7 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* RESUMEN DEL EVENTO */}
+        {/* RESUMEN */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
           <div className="bg-stone-900/60 border border-white/5 rounded-2xl p-5 text-center">
             <p className="text-[10px] text-stone-500 uppercase tracking-widest mb-1">Suites Ocupadas</p>
@@ -174,12 +163,12 @@ export default function AdminDashboard() {
             <p className="text-[10px] text-stone-600 mt-1">disponibles</p>
           </div>
           <div className="bg-stone-900/60 border border-white/5 rounded-2xl p-5 text-center">
-            <p className="text-[10px] text-stone-500 uppercase tracking-widest mb-1">Mesas Ocupadas</p>
+            <p className="text-[10px] text-stone-500 uppercase tracking-widest mb-1">Tables Ocupadas</p>
             <p className="text-3xl font-black text-red-500">{ocupadasMesas}</p>
             <p className="text-[10px] text-stone-600 mt-1">de {totalMesas} totales</p>
           </div>
           <div className="bg-stone-900/60 border border-white/5 rounded-2xl p-5 text-center">
-            <p className="text-[10px] text-stone-500 uppercase tracking-widest mb-1">Mesas Libres</p>
+            <p className="text-[10px] text-stone-500 uppercase tracking-widest mb-1">Tables Libres</p>
             <p className="text-3xl font-black text-green-500">{totalMesas - ocupadasMesas}</p>
             <p className="text-[10px] text-stone-600 mt-1">disponibles</p>
           </div>
@@ -197,7 +186,7 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('mesas')}
             className={`px-8 py-3 rounded-full font-bold uppercase tracking-widest transition-all ${activeTab === 'mesas' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50' : 'bg-stone-900 text-stone-500 border border-white/5'}`}
           >
-            Mesas Numeradas
+            VIP Tables
           </button>
         </div>
 
@@ -217,10 +206,19 @@ export default function AdminDashboard() {
         {/* CONTENT */}
         <div className="space-y-12">
           {activeTab === 'suites' ? (
+
+            // ── SUITES: Verde (42) + Amarillo (4) ─────────────────
             Object.keys(suitesData).map(catName => (
               <div key={catName} className="bg-stone-900/50 p-8 rounded-[2rem] border border-white/5">
-                <h3 className="text-amber-500 font-bold uppercase tracking-widest mb-6 border-l-4 border-amber-600 pl-4">{catName}</h3>
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+                <h3 className="text-amber-500 font-bold uppercase tracking-widest mb-2 border-l-4 border-amber-600 pl-4">
+                  {catName}
+                </h3>
+                <p className="text-stone-600 text-[10px] uppercase tracking-widest mb-6 pl-4">
+                  {catName === "Verde Suite Gold"
+                    ? "42 suites · $2,000 USD · 10 personas"
+                    : "4 suites · $4,000 USD · 20 personas"}
+                </p>
+                <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 lg:grid-cols-14 gap-3">
                   {suitesData[catName].map(num => {
                     const isBlocked = checkOccupied('suite', num, catName);
                     return (
@@ -233,22 +231,27 @@ export default function AdminDashboard() {
                             : 'bg-green-900/20 border-green-600 text-green-500 hover:bg-green-900/40'
                           }`}
                       >
-                        <span className="text-lg">{num}</span>
-                        <span className="text-[9px] uppercase mt-1">{isBlocked ? 'Ocupado' : 'Libre'}</span>
-                        {isBlocked ? <Lock size={12} className="mt-1"/> : <Unlock size={12} className="mt-1"/>}
+                        <span className="text-base">{num}</span>
+                        <span className="text-[8px] uppercase mt-0.5">{isBlocked ? 'Ocupado' : 'Libre'}</span>
+                        {isBlocked ? <Lock size={10} className="mt-0.5"/> : <Unlock size={10} className="mt-0.5"/>}
                       </button>
                     );
                   })}
                 </div>
               </div>
             ))
+
           ) : (
-            // MESAS — ahora renderiza MESAS GOLD del 1 al 30
+
+            // ── VIP TABLES: 1-30 ──────────────────────────────────
             Object.keys(tablesGroups).map(catName => (
               <div key={catName} className="bg-stone-900/50 p-8 rounded-[2rem] border border-white/5">
-                <h3 className="text-amber-500 font-bold uppercase tracking-widest mb-6 border-l-4 border-amber-600 pl-4">
-                  {catName} <span className="text-stone-600 font-normal text-xs ml-2">— $600 USD · 30 mesas</span>
+                <h3 className="text-amber-500 font-bold uppercase tracking-widest mb-2 border-l-4 border-amber-600 pl-4">
+                  {catName}
                 </h3>
+                <p className="text-stone-600 text-[10px] uppercase tracking-widest mb-6 pl-4">
+                  30 tables · $600 USD · 4 asientos
+                </p>
                 <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-3">
                   {tablesGroups[catName].map(num => {
                     const isBlocked = checkOccupied('table', num, catName);
@@ -273,7 +276,6 @@ export default function AdminDashboard() {
             ))
           )}
         </div>
-
       </div>
     </div>
   );

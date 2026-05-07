@@ -10,16 +10,15 @@ import AdminDashboard from './AdminDashboard';
 const stripePromise = loadStripe('pk_live_51SoV9yRqCWGV92H1MaeHgtUiis4SfVjJ8Z5WEN6H2sFLoZtdnHu7LrU1qCoTuCYAApEgUivuTYVbdhwFMqHydtFq00lgEpDiQS');
 const API_URL = 'https://suites-gomez-production.up.railway.app';
 
-// ✅ MAPEO VISUAL → INTERNO (backend intacto)
-// "VIP TABLES" es solo el nombre visual — internamente sigue siendo MesaVipGold
+// ✅ MAPEO VISUAL → INTERNO
 const CATEGORY_MAP = {
   "VIP TABLES": "MesaVipGold",
 };
 
 // ✅ STRIPE PRICE IDs — SUITES 26-jun-2026
 const SUITE_PRICE_IDS = {
-  "Verde Suite Gold":       "price_1SpNDMRqCWGV92H13HcruvZI",  // $2,000 — 10 personas
-  "Amarillo Suite Premium": "price_1SpE7RRqCWGV92H1zFtEAIV8",  // $4,000 — 20 personas
+  "Suite 10 Personas": "price_1SpNDMRqCWGV92H13HcruvZI",  // $2,000 — 46 suites disponibles
+  "Suite 20 Personas": "price_1SpE7RRqCWGV92H1zFtEAIV8",  // $4,000 — 5 suites disponibles
 };
 
 // ✅ EVENTOS ACTIVOS
@@ -187,26 +186,27 @@ function MainLanding() {
     }
   };
   
-  // ── SUITES ───────────────────────────────────────────────────────
+  // ── SUITES ────────────────────────────────────────────────────────
+  // Suite 10 Personas: 46 suites disponibles · $2,000 USD
+  // Suite 20 Personas:  5 suites disponibles · $4,000 USD
   const suitesData = {
-    "Verde Suite Gold": {
+    "Suite 10 Personas": {
       color: "bg-[#7dbd7d]",
-      numeros: Array.from({ length: 42 }, (_, i) => (i + 1).toString()),
+      numeros: Array.from({ length: 46 }, (_, i) => (i + 1).toString()),
       precioBase: 2000,
       detalles: "10 tickets incluidos · No incluye parking ni bebidas",
       icon: <Crown className="w-5 h-5 text-[#7dbd7d]" />
     },
-    "Amarillo Suite Premium": {
+    "Suite 20 Personas": {
       color: "bg-[#ffff00]",
-      numeros: Array.from({ length: 4 }, (_, i) => (i + 1).toString()),
+      numeros: Array.from({ length: 5 }, (_, i) => (i + 1).toString()),
       precioBase: 4000,
       detalles: "20 tickets incluidos · No incluye parking ni bebidas",
       icon: <Star className="w-5 h-5 text-yellow-400" />
     },
   };
 
-  // ── MESAS ─────────────────────────────────────────────────────────
-  // Nombre visual cambiado a "VIP TABLES" — backend sigue usando MesaVipGold via CATEGORY_MAP
+  // ── VIP TABLES ────────────────────────────────────────────────────
   const tablesGroups = {
     "VIP TABLES": {
       numeros: Array.from({ length: 30 }, (_, i) => i + 1),
@@ -471,7 +471,9 @@ function MainLanding() {
                             ${suitesData[key].precioBase.toLocaleString()} <span className="text-[10px] text-stone-500 font-medium">USD</span>
                           </span>
                           <span className="text-[9px] text-stone-500 font-medium uppercase tracking-wider mt-0.5">
-                            {key === "Verde Suite Gold" ? "10 accesos · No incluye parking ni bebidas" : "20 accesos · No incluye parking ni bebidas"}
+                            {key === "Suite 10 Personas"
+                              ? "10 accesos · No incluye parking ni bebidas"
+                              : "20 accesos · No incluye parking ni bebidas"}
                           </span>
                         </div>
                       </div>
