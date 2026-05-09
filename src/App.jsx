@@ -17,8 +17,8 @@ const CATEGORY_MAP = {
 
 // ✅ STRIPE PRICE IDs — SUITES 26-jun-2026
 const SUITE_PRICE_IDS = {
-  "Suite 10 Personas": "price_1SpNDMRqCWGV92H13HcruvZI",  // $2,000 — 46 suites disponibles
-  "Suite 20 Personas": "price_1SpE7RRqCWGV92H1zFtEAIV8",  // $4,000 — 5 suites disponibles
+  "Suite 10 Personas": "price_1SpNDMRqCWGV92H13HcruvZI",  // $2,000 — 14 suites disponibles
+  "Suite 20 Personas": "price_1SpE7RRqCWGV92H1zFtEAIV8",  // $4,000 — 1 suite disponible
 };
 
 // ✅ EVENTOS ACTIVOS
@@ -187,19 +187,19 @@ function MainLanding() {
   };
   
   // ── SUITES ────────────────────────────────────────────────────────
-  // Suite 10 Personas: 46 suites disponibles · $2,000 USD
-  // Suite 20 Personas:  5 suites disponibles · $4,000 USD
+  // Suite 10 Personas: 14 suites disponibles · $2,000 USD
+  // Suite 20 Personas:  1 suite disponible · $4,000 USD
   const suitesData = {
     "Suite 10 Personas": {
       color: "bg-[#7dbd7d]",
-      numeros: Array.from({ length: 46 }, (_, i) => (i + 1).toString()),
+      numeros: Array.from({ length: 14 }, (_, i) => (i + 1).toString()),
       precioBase: 2000,
       detalles: "10 tickets incluidos · No incluye parking ni bebidas",
       icon: <Crown className="w-5 h-5 text-[#7dbd7d]" />
     },
     "Suite 20 Personas": {
       color: "bg-[#ffff00]",
-      numeros: Array.from({ length: 5 }, (_, i) => (i + 1).toString()),
+      numeros: Array.from({ length: 1 }, (_, i) => (i + 1).toString()),
       precioBase: 4000,
       detalles: "20 tickets incluidos · No incluye parking ni bebidas",
       icon: <Star className="w-5 h-5 text-yellow-400" />

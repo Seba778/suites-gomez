@@ -17,8 +17,8 @@ const CATEGORY_MAP = {
 
 // Suites con numeración secuencial
 const suitesData = {
-  "Verde Suite Gold":       Array.from({ length: 42 }, (_, i) => (i + 1).toString()), // 1-42 · $2,000
-  "Amarillo Suite Premium": Array.from({ length: 4 },  (_, i) => (i + 1).toString()), // 1-4  · $4,000
+  "Suite 10 Personas": Array.from({ length: 14 }, (_, i) => (i + 1).toString()),
+  "Suite 20 Personas": Array.from({ length: 1 },  (_, i) => (i + 1).toString()),
 };
 
 // VIP Tables 1-30
