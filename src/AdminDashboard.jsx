@@ -5,23 +5,20 @@ const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:4000'
   : 'https://suites-gomez-production.up.railway.app';
 
-// Solo el evento activo
 const EVENTS = [
   { id: "26-jun-2026", name: "26 Jun - JBF Nations Cup 2026" }
 ];
 
-// VIP TABLES → MesaVipGold (backend intacto)
 const CATEGORY_MAP = {
   "VIP TABLES": "MesaVipGold"
 };
 
-// Suites con numeración secuencial
+// ✅ Nombres y números sincronizados con App.jsx
 const suitesData = {
-  "Suite 10 Personas": Array.from({ length: 14 }, (_, i) => (i + 1).toString()),
-  "Suite 20 Personas": Array.from({ length: 1 },  (_, i) => (i + 1).toString()),
+  "Suite 10 People": ["320","318","316","314","312","310","308","306","304","302","301","305","307","309","360","362"],
+  "Suite 20 People": ["364"],
 };
 
-// VIP Tables 1-30
 const tablesGroups = {
   "VIP TABLES": Array.from({ length: 30 }, (_, i) => i + 1)
 };
@@ -135,7 +132,6 @@ export default function AdminDashboard() {
               <p className="text-stone-400 text-xs tracking-widest">Gomez Western Wear Arena</p>
             </div>
           </div>
-          {/* Selector de evento — queda para futuras fechas */}
           <div className="flex items-center gap-4 bg-stone-900 p-2 rounded-2xl border border-white/10">
             <Calendar className="text-amber-600 ml-2" />
             <select 
@@ -206,19 +202,17 @@ export default function AdminDashboard() {
         {/* CONTENT */}
         <div className="space-y-12">
           {activeTab === 'suites' ? (
-
-            // ── SUITES: Verde (42) + Amarillo (4) ─────────────────
             Object.keys(suitesData).map(catName => (
               <div key={catName} className="bg-stone-900/50 p-8 rounded-[2rem] border border-white/5">
                 <h3 className="text-amber-500 font-bold uppercase tracking-widest mb-2 border-l-4 border-amber-600 pl-4">
                   {catName}
                 </h3>
                 <p className="text-stone-600 text-[10px] uppercase tracking-widest mb-6 pl-4">
-                  {catName === "Verde Suite Gold"
-                    ? "42 suites · $2,000 USD · 10 personas"
-                    : "4 suites · $4,000 USD · 20 personas"}
+                  {catName === "Suite 10 People"
+                    ? "16 suites · $2,000 USD · 10 people"
+                    : "1 suite · $4,000 USD · 20 people"}
                 </p>
-                <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 lg:grid-cols-14 gap-3">
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
                   {suitesData[catName].map(num => {
                     const isBlocked = checkOccupied('suite', num, catName);
                     return (
@@ -240,17 +234,14 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ))
-
           ) : (
-
-            // ── VIP TABLES: 1-30 ──────────────────────────────────
             Object.keys(tablesGroups).map(catName => (
               <div key={catName} className="bg-stone-900/50 p-8 rounded-[2rem] border border-white/5">
                 <h3 className="text-amber-500 font-bold uppercase tracking-widest mb-2 border-l-4 border-amber-600 pl-4">
                   {catName}
                 </h3>
                 <p className="text-stone-600 text-[10px] uppercase tracking-widest mb-6 pl-4">
-                  30 tables · $600 USD · 4 asientos
+                  30 tables · $600 USD · 4 seats
                 </p>
                 <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-3">
                   {tablesGroups[catName].map(num => {

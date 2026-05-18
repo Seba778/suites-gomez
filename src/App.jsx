@@ -17,15 +17,15 @@ const CATEGORY_MAP = {
 
 // ✅ STRIPE PRICE IDs — SUITES 26-jun-2026
 const SUITE_PRICE_IDS = {
-  "Suite 10 Personas": "price_1SpNDMRqCWGV92H13HcruvZI",  // $2,000 — 14 suites disponibles
-  "Suite 20 Personas": "price_1SpE7RRqCWGV92H1zFtEAIV8",  // $4,000 — 1 suite disponible
+  "Suite 10 People": "price_1SpNDMRqCWGV92H13HcruvZI",  // $2,000 — 16 suites
+  "Suite 20 People": "price_1SpE7RRqCWGV92H1zFtEAIV8",  // $4,000 — 1 suite
 };
 
 // ✅ EVENTOS ACTIVOS
 const EVENTS = {
   "26-jun-2026": {
     name: "JBF Nations Cup 2026",
-    date: "Viernes 26 de Junio, 2026",
+    date: "Friday, June 26, 2026",
     location: "1818 Rodeo Dr. Mesquite TX 75149",
     image: "/evento-16.jpg"
   }
@@ -114,13 +114,13 @@ function MainLanding() {
 
   // ✅ PAGO SUITES
   const handlePayment = async () => {
-    if (!selectedNumber) return alert("Selecciona un número de suite");
-    if (!currentEventId) return alert("Selecciona un evento");
-    if (!selectedColor) return alert("Selecciona una categoría de suite");
+    if (!selectedNumber) return alert("Please select a suite number");
+    if (!currentEventId) return alert("Please select an event");
+    if (!selectedColor) return alert("Please select a suite category");
 
     const priceId = SUITE_PRICE_IDS[selectedColor];
     if (!priceId || priceId.startsWith("REEMPLAZAR")) {
-      return alert("⚠️ Price ID de Stripe no configurado para esta categoría.");
+      return alert("⚠️ Stripe Price ID not configured for this category.");
     }
 
     try {
@@ -139,18 +139,18 @@ function MainLanding() {
       const session = await response.json();
       if (session.error) { alert(`Error: ${session.error}`); return; }
       if (session.url) { window.location.href = session.url; }
-      else { alert("Error al procesar el pago"); }
+      else { alert("Error processing payment"); }
     } catch (error) {
       console.error("Error al procesar el pago:", error);
-      alert("Error de conexión con el servidor");
+      alert("Connection error with the server");
     }
   };
 
   // ✅ PAGO MESAS
   const handleTablePayment = async () => {
-    if (!selectedTable) return alert("Por favor selecciona una mesa primero");
-    if (!currentEventId) return alert("Selecciona un evento");
-    if (!selectedTableCategory) return alert("Selecciona una categoría de mesa");
+    if (!selectedTable) return alert("Please select a table first");
+    if (!currentEventId) return alert("Please select an event");
+    if (!selectedTableCategory) return alert("Please select a table category");
 
     try {
       const internalCategory = CATEGORY_MAP[selectedTableCategory];
@@ -179,29 +179,29 @@ function MainLanding() {
       const session = await response.json();
       if (session.error) { alert(`Error: ${session.error}`); return; }
       if (session.url) { window.location.href = session.url; }
-      else { alert("Error al procesar el pago"); }
+      else { alert("Error processing payment"); }
     } catch (error) {
       console.error("Error al procesar el pago de la mesa:", error);
-      alert("Error conectando con el servidor");
+      alert("Connection error with the server");
     }
   };
   
   // ── SUITES ────────────────────────────────────────────────────────
-  // Suite 10 Personas: 14 suites disponibles · $2,000 USD
-  // Suite 20 Personas:  1 suite disponible · $4,000 USD
+  // Suite 10 People: 16 suites · $2,000 USD
+  // Suite 20 People:  1 suite  · $4,000 USD
   const suitesData = {
-    "Suite 10 Personas": {
+    "Suite 10 People": {
       color: "bg-[#7dbd7d]",
-      numeros: Array.from({ length: 14 }, (_, i) => (i + 1).toString()),
+      numeros: ["320","318","316","314","312","310","308","306","304","302","301","305","307","309","360","362"],
       precioBase: 2000,
-      detalles: "10 tickets incluidos · No incluye parking ni bebidas",
+      detalles: "10 tickets included · Parking and drinks not included",
       icon: <Crown className="w-5 h-5 text-[#7dbd7d]" />
     },
-    "Suite 20 Personas": {
+    "Suite 20 People": {
       color: "bg-[#ffff00]",
-      numeros: Array.from({ length: 1 }, (_, i) => (i + 1).toString()),
+      numeros: ["364"],
       precioBase: 4000,
-      detalles: "20 tickets incluidos · No incluye parking ni bebidas",
+      detalles: "20 tickets included · Parking and drinks not included",
       icon: <Star className="w-5 h-5 text-yellow-400" />
     },
   };
@@ -233,16 +233,16 @@ function MainLanding() {
             </div>
             <div className="hidden md:flex items-center gap-8 text-[10px] uppercase tracking-[0.2em] font-bold text-stone-400">
               <a href="#eventos" className="hover:text-amber-500 transition-colors duration-300 relative group">
-                Eventos
+                Events
                 <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-amber-600 group-hover:w-full transition-all duration-300" />
               </a>
               <a href="#nosotros" className="hover:text-amber-500 transition-colors duration-300 relative group">
-                Nosotros
+                About Us
                 <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-amber-600 group-hover:w-full transition-all duration-300" />
               </a>
               <a href="#eventos" className="relative overflow-hidden border border-amber-600/60 hover:border-amber-500 text-amber-400 hover:text-white px-7 py-2.5 rounded-full transition-all duration-300 group">
                 <span className="absolute inset-0 bg-amber-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                <span className="relative">Próximos Eventos</span>
+                <span className="relative">Upcoming Events</span>
               </a>
             </div>
           </div>
@@ -253,7 +253,7 @@ function MainLanding() {
       <header className="relative z-10 pt-36 md:pt-52 pb-10 text-center animate-fade-in">
         <div className="flex items-center justify-center gap-6 mb-8">
           <div className="h-[1px] w-16 bg-gradient-to-r from-transparent to-amber-600/70" />
-          <p className="text-amber-500 font-bold tracking-[0.6em] uppercase text-[10px]">Selección de Membresía Elite</p>
+          <p className="text-amber-500 font-bold tracking-[0.6em] uppercase text-[10px]">Elite Membership Selection</p>
           <div className="h-[1px] w-16 bg-gradient-to-l from-transparent to-amber-600/70" />
         </div>
         <h1 className="text-6xl md:text-9xl font-black leading-[0.85] uppercase tracking-tighter mb-6">
@@ -267,21 +267,21 @@ function MainLanding() {
           <div className="h-[1px] w-12 bg-amber-800/50" />
         </div>
         <p className="text-stone-400 text-sm md:text-lg font-light italic max-w-xl mx-auto px-6 leading-relaxed">
-          "Bienvenido a Gómez Arena — la zona exclusiva donde cada suite está diseñada para una experiencia verdaderamente inolvidable"
+          "Welcome to Gómez Arena — the exclusive zone where every suite is designed for a truly unforgettable experience"
         </p>
         <div className="flex items-center justify-center gap-8 mt-10">
           <div className="text-center">
-            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-500 mb-1">Suites desde</p>
+            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-500 mb-1">Suites from</p>
             <p className="text-2xl font-black text-amber-500">$2,000 <span className="text-sm font-medium text-stone-400">USD</span></p>
           </div>
           <div className="w-[1px] h-10 bg-white/10" />
           <div className="text-center">
-            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-500 mb-1">Mesas desde</p>
+            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-500 mb-1">Tables from</p>
             <p className="text-2xl font-black text-amber-500">$600 <span className="text-sm font-medium text-stone-400">USD</span></p>
           </div>
           <div className="w-[1px] h-10 bg-white/10" />
           <div className="text-center">
-            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-500 mb-1">Capacidad</p>
+            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-500 mb-1">Capacity</p>
             <p className="text-2xl font-black text-white">10k+</p>
           </div>
         </div>
@@ -292,7 +292,7 @@ function MainLanding() {
         {/* VIDEO */}
         <section className="w-full">
           <div className="flex items-center gap-3 text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em] mb-8">
-            <Play size={14} fill="currentColor"/> Vista Previa de la Arena
+            <Play size={14} fill="currentColor"/> Arena Preview
           </div>
           <div className="relative rounded-[2.5rem] overflow-hidden border border-amber-600/20 aspect-video shadow-2xl">
             <video src="/estadio-preview.mp4" autoPlay muted loop className="w-full h-full object-cover scale-105" />
@@ -304,12 +304,12 @@ function MainLanding() {
           </div>
         </section>
 
-        {/* ── EVENTOS ─────────────────────────────────────────── */}
+        {/* ── EVENTS ─────────────────────────────────────────── */}
         <section id="eventos" className="w-full text-center">
           <div className="flex items-center justify-center gap-4 mb-3">
             <div className="h-[1px] w-12 bg-amber-800/50" />
             <Calendar size={14} className="text-amber-500" />
-            <span className="text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em]">Próximos Eventos</span>
+            <span className="text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em]">Upcoming Events</span>
             <Calendar size={14} className="text-amber-500" />
             <div className="h-[1px] w-12 bg-amber-800/50" />
           </div>
@@ -319,11 +319,11 @@ function MainLanding() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 flex flex-col md:flex-row items-end md:items-center justify-between gap-6">
               <div className="text-left">
-                <p className="text-amber-500 text-[9px] uppercase tracking-[0.4em] font-bold mb-2">Próximo Evento</p>
+                <p className="text-amber-500 text-[9px] uppercase tracking-[0.4em] font-bold mb-2">Upcoming Event</p>
                 <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter leading-none text-white mb-2">JBF Nations Cup 2026</h3>
                 <div className="flex items-center gap-3 text-stone-300 text-xs">
                   <Calendar size={12} className="text-amber-500" />
-                  <span>Viernes 26 de Junio, 2026</span>
+                  <span>Friday, June 26, 2026</span>
                   <span className="text-stone-600">·</span>
                   <MapPin size={12} className="text-amber-500" />
                   <span>Mesquite, TX</span>
@@ -333,7 +333,7 @@ function MainLanding() {
                 onClick={() => openReservationModal("26-jun-2026", "JBF Nations Cup 2026")}
                 className="shrink-0 bg-amber-600 hover:bg-amber-500 text-white font-black py-4 px-10 rounded-full transition-all shadow-xl uppercase tracking-widest text-xs whitespace-nowrap"
               >
-                Reservar Suite
+                Book Suite
               </button>
             </div>
             <div className="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-amber-600/50 rounded-tl-lg pointer-events-none" />
@@ -341,31 +341,31 @@ function MainLanding() {
           </div>
         </section>
 
-        {/* ── NOSOTROS ────────────────────────────────────────── */}
+        {/* ── ABOUT US ────────────────────────────────────────── */}
         <section id="nosotros" className="relative rounded-[4rem] overflow-hidden border border-amber-600/10 bg-[#0a0806] p-8 md:p-20">
           <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-600/30 to-transparent" />
           <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-600/20 to-transparent" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-8 text-left">
-              <p className="text-amber-700 text-[9px] uppercase tracking-[0.5em] font-bold">Nuestra Historia</p>
+              <p className="text-amber-700 text-[9px] uppercase tracking-[0.5em] font-bold">Our Story</p>
               <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none">
-                SOBRE <span className="text-amber-600">NOSOTROS</span>
+                ABOUT <span className="text-amber-600">US</span>
               </h2>
               <div className="flex items-center gap-3">
                 <div className="h-[2px] w-16 bg-amber-600" />
                 <div className="w-1.5 h-1.5 bg-amber-600 rotate-45" />
               </div>
               <p className="text-stone-300 text-lg leading-relaxed italic font-light">
-                Gomez Western Wear Arena nació como un espacio único, diseñado para fusionar la elegancia moderna con el espíritu indomable de la cultura Western. Cada rincón de nuestra arena refleja un compromiso con la calidad y la hospitalidad de clase mundial.
+                Gomez Western Wear Arena was born as a one-of-a-kind space, designed to blend modern elegance with the untamed spirit of Western culture. Every corner of our arena reflects a commitment to quality and world-class hospitality.
               </p>
               <div className="grid grid-cols-2 gap-8 pt-6 border-t border-white/5">
                 <div>
                   <div className="text-amber-500 font-black text-4xl mb-1">10k+</div>
-                  <div className="text-stone-500 uppercase text-[9px] tracking-widest font-bold">Capacidad Total</div>
+                  <div className="text-stone-500 uppercase text-[9px] tracking-widest font-bold">Total Capacity</div>
                 </div>
                 <div>
                   <div className="text-amber-500 font-black text-4xl mb-1">50+</div>
-                  <div className="text-stone-500 uppercase text-[9px] tracking-widest font-bold">Suites de Lujo</div>
+                  <div className="text-stone-500 uppercase text-[9px] tracking-widest font-bold">Luxury Suites</div>
                 </div>
               </div>
             </div>
@@ -373,27 +373,27 @@ function MainLanding() {
               <div className="bg-black/40 p-8 rounded-[2rem] border border-amber-600/10 hover:border-amber-600/30 transition-all duration-500 group">
                 <div className="flex items-center gap-4 mb-4 text-amber-600">
                   <Target size={24} />
-                  <h4 className="text-base font-black uppercase tracking-wider italic">Nuestra Misión</h4>
+                  <h4 className="text-base font-black uppercase tracking-wider italic">Our Mission</h4>
                 </div>
-                <p className="text-stone-400 leading-relaxed text-sm">Elevamos el estándar del entretenimiento Western, proporcionando una experiencia de hospitalidad inigualable que honra nuestras raíces mientras miramos hacia el futuro.</p>
+                <p className="text-stone-400 leading-relaxed text-sm">We elevate the standard of Western entertainment, providing an unmatched hospitality experience that honors our roots while looking toward the future.</p>
               </div>
               <div className="bg-black/40 p-8 rounded-[2rem] border border-amber-600/10 hover:border-amber-600/30 transition-all duration-500">
                 <div className="flex items-center gap-4 mb-4 text-amber-600">
                   <Eye size={24} />
-                  <h4 className="text-base font-black uppercase tracking-wider italic">Nuestra Visión</h4>
+                  <h4 className="text-base font-black uppercase tracking-wider italic">Our Vision</h4>
                 </div>
-                <p className="text-stone-400 leading-relaxed text-sm">Ser reconocidos como el epicentro global del estilo de vida Western, donde la exclusividad y la pasión se encuentran bajo un mismo techo.</p>
+                <p className="text-stone-400 leading-relaxed text-sm">To be recognized as the global epicenter of the Western lifestyle, where exclusivity and passion come together under one roof.</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* GALERÍA */}
+        {/* GALLERY */}
         <section className="w-full text-center space-y-12">
           <div className="flex items-center justify-center gap-4">
             <div className="h-[1px] w-12 bg-amber-800/50" />
             <Star size={14} className="text-amber-500" fill="currentColor" />
-            <span className="text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em]">Galería Exclusiva de Suites</span>
+            <span className="text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em]">Exclusive Suite Gallery</span>
             <Star size={14} className="text-amber-500" fill="currentColor" />
             <div className="h-[1px] w-12 bg-amber-800/50" />
           </div>
@@ -402,7 +402,7 @@ function MainLanding() {
               <div key={num} className="group relative rounded-[2rem] overflow-hidden border border-amber-600/10 aspect-[4/3] bg-stone-900 shadow-xl hover:border-amber-600/30 transition-all duration-500">
                 <img src={`/suite-ejemplo${num}.jpg`} alt={`Suite ${num}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-100" />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-white font-black text-[10px] uppercase tracking-[0.3em] border border-amber-600/50 px-5 py-2.5 rounded-full">Ver Detalles</span>
+                  <span className="text-white font-black text-[10px] uppercase tracking-[0.3em] border border-amber-600/50 px-5 py-2.5 rounded-full">View Details</span>
                 </div>
               </div>
             ))}
@@ -410,7 +410,7 @@ function MainLanding() {
         </section>
       </main>
 
-      {/* ── MODAL DE RESERVA ────────────────────────────────────── */}
+      {/* ── RESERVATION MODAL ────────────────────────────────────── */}
       {selectedEvent && currentEventId && (
         <div className="fixed inset-0 z-[100] bg-black/98 backdrop-blur-2xl overflow-y-auto animate-fade-in p-4 md:p-10">
           <div className="max-w-7xl mx-auto relative bg-[#080604] rounded-[3rem] border border-amber-600/15 p-6 md:p-12 shadow-2xl">
@@ -421,7 +421,7 @@ function MainLanding() {
             </button>
             
             <div className="mb-14">
-              <span className="text-amber-600 font-bold uppercase tracking-[0.4em] text-[9px]">Reservando para</span>
+              <span className="text-amber-600 font-bold uppercase tracking-[0.4em] text-[9px]">Booking for</span>
               <h2 className="text-4xl md:text-6xl font-black uppercase italic mt-2 leading-none">{selectedEvent}</h2>
               <p className="text-stone-500 text-sm mt-3">{EVENTS[currentEventId]?.date} · {EVENTS[currentEventId]?.location}</p>
               <div className="flex items-center gap-3 mt-5">
@@ -433,18 +433,18 @@ function MainLanding() {
             
             {loadingOccupancy && (
               <div className="text-center py-8">
-                <p className="text-amber-500 font-bold animate-pulse text-[11px] uppercase tracking-widest">Cargando disponibilidad...</p>
+                <p className="text-amber-500 font-bold animate-pulse text-[11px] uppercase tracking-widest">Loading availability...</p>
               </div>
             )}
 
-            {/* MAPA */}
+            {/* MAP */}
             <div className="mb-20">
               <div className="flex items-center gap-3 text-stone-500 font-bold text-[10px] uppercase tracking-[0.4em] mb-8">
                 <MapPin size={14} className="text-amber-600" />
-                <span>Mapa de Ubicaciones · Suite Level</span>
+                <span>Location Map · Suite Level</span>
               </div>
               <div className="bg-black/60 p-4 rounded-[2.5rem] border border-amber-600/10 shadow-inner">
-                <img src="/SUITES_21J.png" alt="Mapa Suites JBF Nations Cup 2026" className="w-full h-auto rounded-2xl shadow-2xl border border-white/5" />
+                <img src="/SUITES_21J.png" alt="Suite Map JBF Nations Cup 2026" className="w-full h-auto rounded-2xl shadow-2xl border border-white/5" />
               </div>
             </div>
 
@@ -452,7 +452,7 @@ function MainLanding() {
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
               <div className="lg:col-span-2 space-y-4">
                 <h3 className="text-stone-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-8 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" /> 1. Suite de Preferencia
+                  <span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" /> 1. Preferred Suite
                 </h3>
                 {Object.keys(suitesData).map((key) => (
                   <div key={key}>
@@ -471,23 +471,23 @@ function MainLanding() {
                             ${suitesData[key].precioBase.toLocaleString()} <span className="text-[10px] text-stone-500 font-medium">USD</span>
                           </span>
                           <span className="text-[9px] text-stone-500 font-medium uppercase tracking-wider mt-0.5">
-                            {key === "Suite 10 Personas"
-                              ? "10 accesos · No incluye parking ni bebidas"
-                              : "20 accesos · No incluye parking ni bebidas"}
+                            {key === "Suite 10 People"
+                              ? "10 accesses · Parking and drinks not included"
+                              : "20 accesses · Parking and drinks not included"}
                           </span>
                         </div>
                       </div>
                       <ArrowRight size={14} className={`transition-opacity ${selectedColor === key ? 'opacity-100 text-amber-500' : 'opacity-20'}`} />
                     </button>
                     <p className="text-[9px] text-stone-600 mt-2 mb-5 px-2 italic uppercase tracking-wide">
-                      * No incluye parking ni bebidas. Se abonan por separado.
+                      * Parking and drinks not included. Paid separately.
                     </p>
                   </div>
                 ))}
               </div>
 
               <div className={`lg:col-span-3 bg-black/50 p-8 md:p-12 rounded-[3rem] border border-amber-600/8 transition-all duration-700 ${!selectedColor ? 'opacity-40 grayscale' : 'opacity-100'}`}>
-                <h3 className="text-stone-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-8">2. Disponibilidad de Suites</h3>
+                <h3 className="text-stone-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-8">2. Suite Availability</h3>
                 <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                   {selectedColor && suitesData[selectedColor].numeros.map((num) => {
                     const isOcupada = isSuiteOccupied(num, selectedColor, currentEventId);
@@ -511,14 +511,14 @@ function MainLanding() {
               </div>
             </div>
 
-            {/* SUITE CONFIRMADA */}
+            {/* SUITE CONFIRMED */}
             {selectedNumber && (
               <div className="mt-16 animate-slide-up">
                 <div className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800 p-[1px] rounded-[3rem] shadow-2xl shadow-amber-900/30">
                   <div className="bg-[#0c0a08] rounded-[2.9rem] p-8 md:p-12 flex flex-col md:flex-row justify-between items-center gap-10">
                     <div className="text-center md:text-left">
                       <div className="flex items-center justify-center md:justify-start gap-2 text-amber-500 text-[9px] font-black uppercase tracking-[0.4em] mb-4">
-                        <CheckCircle2 size={12}/> Suite Seleccionada
+                        <CheckCircle2 size={12}/> Suite Selected
                       </div>
                       <h4 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic text-white leading-none">#{selectedNumber}</h4>
                       <p className="text-stone-300 mt-3 italic text-base">{suitesData[selectedColor].detalles}</p>
@@ -528,9 +528,9 @@ function MainLanding() {
                     </div>
                     <div className="flex flex-col items-center md:items-end gap-3">
                       <button onClick={handlePayment} className="relative overflow-hidden bg-amber-600 hover:bg-amber-500 text-white font-black py-5 px-14 rounded-full transition-all shadow-xl uppercase tracking-widest text-xs">
-                        Confirmar Reserva
+                        Confirm Booking
                       </button>
-                      <p className="text-[9px] text-stone-600 uppercase tracking-wider">Pago seguro · Stripe</p>
+                      <p className="text-[9px] text-stone-600 uppercase tracking-wider">Secure payment · Stripe</p>
                     </div>
                   </div>
                 </div>
@@ -540,17 +540,17 @@ function MainLanding() {
             {/* ── VIP TABLES ─────────────────────────────────────── */}
             <div className="mt-20 pt-10 border-t border-amber-600/10">
               <div className="flex items-center gap-3 text-amber-500 font-bold text-[10px] uppercase tracking-[0.4em] mb-2">
-                <Gem size={14} /> 3. ¿Deseas agregar una VIP Table?
+                <Gem size={14} /> 3. Would you like to add a VIP Table?
               </div>
               <p className="text-stone-500 text-[10px] font-medium mb-8 ml-6 uppercase tracking-wider">
-                * Incluye <span className="text-white font-black">4 asientos</span>. No incluye boleto de entrada, parking ni bebidas. El pago se abona por separado.
+                * Includes <span className="text-white font-black">4 seats</span>. Does not include entry ticket, parking, or drinks. Payment is made separately.
               </p>
               
               {["20-feb-2026", "26-jun-2026"].includes(currentEventId) ? (
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
                   <div className="lg:col-span-2 space-y-4">
                     <h3 className="text-stone-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-8 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" /> Tipo de Mesa
+                      <span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" /> Table Type
                     </h3>
                     {Object.keys(tablesGroups).map((key) => (
                       <button 
@@ -565,7 +565,7 @@ function MainLanding() {
                           {tablesGroups[key].icon}
                           <div className="flex flex-col">
                             <span className="font-bold uppercase tracking-tight text-sm text-white">{key}</span>
-                            <span className="text-[9px] text-stone-500 uppercase tracking-wider mt-0.5">4 asientos · No incluye bebidas</span>
+                            <span className="text-[9px] text-stone-500 uppercase tracking-wider mt-0.5">4 seats · Drinks not included</span>
                           </div>
                         </div>
                         <ArrowRight size={14} className={`transition-opacity ${selectedTableCategory === key ? 'opacity-100 text-amber-500' : 'opacity-20'}`} />
@@ -576,10 +576,10 @@ function MainLanding() {
                   <div className={`lg:col-span-3 bg-black/50 p-8 rounded-[3rem] border border-amber-600/8 transition-all duration-700 ${!selectedTableCategory ? 'opacity-40 grayscale' : 'opacity-100'}`}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="rounded-2xl overflow-hidden border border-amber-600/15 shadow-lg">
-                        <img src="/mapa-mesas-jbf.jpg" alt="Mapa VIP Tables" className="w-full h-auto opacity-90" />
+                        <img src="/mapa-mesas-jbf.jpg" alt="VIP Tables Map" className="w-full h-auto opacity-90" />
                       </div>
                       <div className="space-y-6">
-                        <label className="text-[10px] text-stone-500 uppercase font-bold tracking-widest">Selecciona Número</label>
+                        <label className="text-[10px] text-stone-500 uppercase font-bold tracking-widest">Select Number</label>
                         <select 
                           disabled={!selectedTableCategory}
                           onChange={(e) => {
@@ -597,7 +597,7 @@ function MainLanding() {
                           }}
                           className="w-full bg-stone-900 border border-amber-600/20 p-4 rounded-xl text-white font-bold outline-none focus:border-amber-600 transition-all cursor-pointer"
                         >
-                          <option value="">Elegir mesa...</option>
+                          <option value="">Choose table...</option>
                           {selectedTableCategory && tablesGroups[selectedTableCategory].numeros.map(n => {
                             const estaOcupada = isTableOccupied(n.toString(), selectedTableCategory);
                             return (
@@ -609,9 +609,9 @@ function MainLanding() {
                         </select>
                         {selectedTable && (
                           <div className="p-6 bg-amber-600/8 border border-amber-600/20 rounded-2xl animate-fade-in text-left">
-                            <p className="text-amber-500 text-[9px] font-black uppercase tracking-widest mb-1">VIP Table #{selectedTable.id} seleccionada</p>
+                            <p className="text-amber-500 text-[9px] font-black uppercase tracking-widest mb-1">VIP Table #{selectedTable.id} selected</p>
                             <p className="text-white text-3xl font-black">${selectedTable.price} <span className="text-sm text-stone-400 font-medium">USD</span></p>
-                            <p className="text-stone-500 text-[9px] uppercase font-bold tracking-wider mt-1">4 asientos · No incluye bebidas</p>
+                            <p className="text-stone-500 text-[9px] uppercase font-bold tracking-wider mt-1">4 seats · Drinks not included</p>
                           </div>
                         )}
                       </div>
@@ -620,7 +620,7 @@ function MainLanding() {
                 </div>
               ) : (
                 <div className="bg-amber-600/5 border border-amber-600/20 rounded-2xl p-8 text-center">
-                  <p className="text-amber-700 font-bold uppercase tracking-widest text-[11px]">Selecciona un evento válido para ver las mesas</p>
+                  <p className="text-amber-700 font-bold uppercase tracking-widest text-[11px]">Please select a valid event to see available tables</p>
                 </div>
               )}
 
@@ -630,17 +630,17 @@ function MainLanding() {
                     <div className="bg-[#0c0a08] rounded-[2.9rem] p-8 md:p-12 flex flex-col md:flex-row justify-between items-center gap-10">
                       <div className="text-center md:text-left">
                         <div className="flex items-center justify-center md:justify-start gap-2 text-amber-500 text-[9px] font-black uppercase tracking-[0.4em] mb-4">
-                          <CheckCircle2 size={12}/> VIP Table Seleccionada
+                          <CheckCircle2 size={12}/> VIP Table Selected
                         </div>
                         <h4 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic text-white leading-none">#{selectedTable.id}</h4>
                         <p className="text-amber-500 font-black text-2xl mt-3">${selectedTable.price} <span className="text-sm text-stone-400 font-medium">USD</span></p>
-                        <p className="text-stone-400 text-sm italic mt-1">4 asientos · No incluye bebidas</p>
+                        <p className="text-stone-400 text-sm italic mt-1">4 seats · Drinks not included</p>
                       </div>
                       <div className="flex flex-col items-center gap-3">
                         <button onClick={handleTablePayment} className="bg-amber-600 hover:bg-amber-500 text-white font-black py-5 px-14 rounded-full transition-all shadow-xl uppercase tracking-widest text-xs">
-                          Confirmar Reserva
+                          Confirm Booking
                         </button>
-                        <p className="text-[9px] text-stone-600 uppercase tracking-wider">Pago seguro · Stripe</p>
+                        <p className="text-[9px] text-stone-600 uppercase tracking-wider">Secure payment · Stripe</p>
                       </div>
                     </div>
                   </div>
@@ -669,12 +669,12 @@ function MainLanding() {
             <div className="flex flex-col gap-3">
               <p className="text-amber-700 text-[9px] uppercase tracking-[0.4em] font-bold mb-1">Venue</p>
               <p className="text-stone-500 text-xs">Mesquite, TX</p>
-              <p className="text-stone-500 text-xs">Capacidad 10,000+ personas</p>
-              <p className="text-stone-500 text-xs">50+ Suites de lujo</p>
-              <p className="text-stone-500 text-xs">VIP Tables disponibles</p>
+              <p className="text-stone-500 text-xs">Capacity 10,000+ people</p>
+              <p className="text-stone-500 text-xs">50+ Luxury Suites</p>
+              <p className="text-stone-500 text-xs">VIP Tables available</p>
             </div>
             <div className="flex flex-col gap-3">
-              <p className="text-amber-700 text-[9px] uppercase tracking-[0.4em] font-bold mb-1">Contacto Oficial</p>
+              <p className="text-amber-700 text-[9px] uppercase tracking-[0.4em] font-bold mb-1">Official Contact</p>
               <a href="mailto:gomezwwarena@gmail.com" className="text-stone-400 hover:text-amber-400 transition-colors text-xs">gomezwwarena@gmail.com</a>
               <a href="https://wa.me/14692168553" target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-amber-400 transition-colors text-xs">WhatsApp: +1 (469) 216-8553</a>
             </div>
