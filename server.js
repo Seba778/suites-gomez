@@ -22,9 +22,6 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Conectado a MongoDB Atlas'))
   .catch(err => console.error('❌ Error DB:', err));
 
-// ============================================
-// 🔧 ESQUEMAS (Schemas)
-// ============================================
 const SuiteSchema = new mongoose.Schema({
   numero: { type: String, required: true },
   eventId: { type: String, required: true },
@@ -47,14 +44,12 @@ const TableSchema = new mongoose.Schema({
 TableSchema.index({ numero: 1, eventId: 1, category: 1 }, { unique: true });
 const Table = mongoose.model('Table', TableSchema);
 
-// --- MIDDLEWARES ---
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// 🚨 IMPORTANTE: El Webhook va ANTES de express.json()
 // ============================================
 // 🪝 WEBHOOK DE STRIPE
 // ============================================
@@ -71,7 +66,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    
     const isTable = session.metadata?.isTable === 'true';
     const itemNumber = session.metadata?.suite;
     const eventId = session.metadata?.eventId;
@@ -87,34 +81,19 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       if (isTable) {
         console.log(`🟡 Guardando MESA #${itemNumber} - ${eventId} - ${category}`);
         await Table.findOneAndUpdate(
-          { numero: itemNumber.toString(), eventId: eventId, category: category },
-          { 
-            numero: itemNumber.toString(),
-            eventId: eventId,
-            category: category,
-            estado: 'bloqueada',
-            clientEmail: customerEmail,
-            fechaVenta: new Date()
-          },
+          { numero: itemNumber.toString(), eventId, category },
+          { numero: itemNumber.toString(), eventId, category, estado: 'bloqueada', clientEmail: customerEmail, fechaVenta: new Date() },
           { upsert: true, new: true }
         );
       } else {
         console.log(`🟡 Guardando SUITE #${itemNumber} - ${eventId} - ${category}`);
         await Suite.findOneAndUpdate(
-          { numero: itemNumber.toString(), eventId: eventId, category: category },
-          { 
-            numero: itemNumber.toString(),
-            eventId: eventId,
-            category: category,
-            estado: 'bloqueada',
-            clientEmail: customerEmail,
-            fechaVenta: new Date()
-          },
+          { numero: itemNumber.toString(), eventId, category },
+          { numero: itemNumber.toString(), eventId, category, estado: 'bloqueada', clientEmail: customerEmail, fechaVenta: new Date() },
           { upsert: true, new: true }
         );
       }
 
-      // ENVIAR EMAIL
       if (customerEmail) {
         const mailOptions = {
           from: process.env.EMAIL_USER,
@@ -142,11 +121,10 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   res.send();
 });
 
-// ✅ AHORA SÍ activamos el traductor JSON para el resto de rutas
 app.use(express.json());
 
 // ============================================
-// ⚡ RESTO DE APIs
+// ⚡ APIs
 // ============================================
 app.get('/api/occupied', async (req, res) => {
   try {
@@ -154,14 +132,14 @@ app.get('/api/occupied', async (req, res) => {
     if (!eventId) return res.status(400).json({ error: "Falta eventId" });
 
     const [occupiedSuites, occupiedTables] = await Promise.all([
-      Suite.find({ eventId: eventId, estado: 'bloqueada' }),
-      Table.find({ eventId: eventId, estado: 'bloqueada' })
+      Suite.find({ eventId, estado: 'bloqueada' }),
+      Table.find({ eventId, estado: 'bloqueada' })
     ]);
-    
-    res.json({ 
-      suites: occupiedSuites.map(s => ({ numero: s.numero, category: s.category })), 
+
+    res.json({
+      suites: occupiedSuites.map(s => ({ numero: s.numero, category: s.category })),
       mesas: occupiedTables.map(t => ({ numero: t.numero, category: t.category })),
-      eventId 
+      eventId
     });
   } catch (error) {
     res.status(500).json({ suites: [], mesas: [], error: error.message });
@@ -179,40 +157,35 @@ app.post('/create-checkout-session', async (req, res) => {
     let metadataNumber = "";
 
     if (isTable) {
-
       let finalPriceId = priceId;
 
+      // ── Precios por evento ──────────────────────────────────
       if (eventId === "20-feb-2026") {
-        if (category === "MesaVipGold") finalPriceId = "price_1TUYkVRqCWGV92H17lBYluu6";
-        else if (category === "MesaVipSilver") finalPriceId = "price_1T24IPRqCWGV92H1XGbRpll4";
+        if (category === "MesaVipGold")   finalPriceId = "price_1TUYkVRqCWGV92H17lBYluu6";
+        if (category === "MesaVipSilver") finalPriceId = "price_1T24IPRqCWGV92H1XGbRpll4";
+      }
+      if (eventId === "26-jun-2026") {
+        if (category === "MesaVipGold")   finalPriceId = "price_1TUYkVRqCWGV92H17lBYluu6";
+      }
+      // ✅ Stage Night — Sept 26, 2026
+      if (eventId === "26-sep-2026") {
+        if (category === "MesaRoja") finalPriceId = "price_1TejHeRqCWGV92H1dh7MRdoe"; // $700
+        if (category === "MesaAzul") finalPriceId = "price_1TejHsRqCWGV92H1vkfUQ7Bg"; // $600
       }
 
       if (!finalPriceId || !category) return res.status(400).json({ error: "Faltan datos de mesa o precio incorrecto" });
 
-      const conflicto = await Table.findOne({
-        numero: tableNumber.toString(),
-        eventId: eventId,
-        category: category,
-        estado: 'bloqueada'
-      });
+      const conflicto = await Table.findOne({ numero: tableNumber.toString(), eventId, category, estado: 'bloqueada' });
       if (conflicto) return res.status(409).json({ error: `Mesa #${tableNumber} ya reservada` });
 
       lineItem = { price: finalPriceId.trim(), quantity: 1 };
       metadataNumber = tableNumber.toString();
 
     } else {
-
-      // ✅ FIX: Usa el priceId enviado desde el frontend directamente
-      // Ya no depende de configSuites.js ni de nombres de categoría viejos
       if (!suiteNumber) return res.status(400).json({ error: "Falta número de suite" });
       if (!priceId) return res.status(400).json({ error: "Falta priceId de suite" });
 
-      const conflicto = await Suite.findOne({
-        numero: suiteNumber.toString(),
-        eventId: eventId,
-        category: category,
-        estado: 'bloqueada'
-      });
+      const conflicto = await Suite.findOne({ numero: suiteNumber.toString(), eventId, category, estado: 'bloqueada' });
       if (conflicto) return res.status(409).json({ error: `Suite #${suiteNumber} ya reservada` });
 
       lineItem = { price: priceId.trim(), quantity: 1 };
@@ -230,7 +203,7 @@ app.post('/create-checkout-session', async (req, res) => {
       metadata: {
         suite: metadataNumber,
         isTable: isTable === true ? 'true' : 'false',
-        eventId: eventId,
+        eventId,
         category: category || ''
       }
     });
@@ -242,14 +215,13 @@ app.post('/create-checkout-session', async (req, res) => {
   }
 });
 
-// ==================================================================
+// ============================================
 // 🔐 ZONA ADMIN
-// ==================================================================
+// ============================================
 app.post('/api/admin/toggle', async (req, res) => {
   const { adminKey, type, numero, eventId, category } = req.body;
-
   const SECRET = process.env.ADMIN_SECRET || 'Kirk2026';
-  
+
   if (adminKey !== SECRET) {
     console.log(`⛔ Intento de acceso denegado con clave: ${adminKey}`);
     return res.status(401).json({ error: "Contraseña incorrecta" });
@@ -261,35 +233,23 @@ app.post('/api/admin/toggle', async (req, res) => {
 
   try {
     const Model = type === 'suite' ? Suite : Table;
-    
-    const query = { 
-      numero: numero.toString(), 
-      eventId: eventId, 
-      category: category 
-    };
-
+    const query = { numero: numero.toString(), eventId, category };
     const item = await Model.findOne(query);
 
     if (item) {
       if (item.clientEmail && !item.clientEmail.includes('admin')) {
-        return res.status(400).json({ 
-          error: `⚠️ CUIDADO: Esta unidad fue comprada por un cliente real (${item.clientEmail}). No se puede borrar desde aquí.` 
+        return res.status(400).json({
+          error: `⚠️ CUIDADO: Esta unidad fue comprada por un cliente real (${item.clientEmail}). No se puede borrar desde aquí.`
         });
       }
       await Model.findOneAndDelete(query);
       console.log(`✅ Admin liberó: ${type} ${numero} (${eventId})`);
       return res.json({ status: 'disponible', message: 'Unidad liberada correctamente' });
     } else {
-      await Model.create({
-        ...query,
-        estado: 'bloqueada',
-        clientEmail: 'admin-manual-block',
-        fechaVenta: new Date()
-      });
+      await Model.create({ ...query, estado: 'bloqueada', clientEmail: 'admin-manual-block', fechaVenta: new Date() });
       console.log(`🔒 Admin bloqueó: ${type} ${numero} (${eventId})`);
       return res.json({ status: 'bloqueada', message: 'Unidad bloqueada correctamente' });
     }
-
   } catch (error) {
     console.error("❌ Error en admin toggle:", error);
     res.status(500).json({ error: "Error del servidor" });

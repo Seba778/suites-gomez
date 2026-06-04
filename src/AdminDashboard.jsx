@@ -6,32 +6,30 @@ const API_URL = window.location.hostname === 'localhost'
   : 'https://suites-gomez-production.up.railway.app';
 
 const EVENTS = [
-  { id: "26-jun-2026", name: "26 Jun - JBF Nations Cup 2026" }
+  { id: "26-sep-2026", name: "26 Sep - Stage Night" }
 ];
 
 const CATEGORY_MAP = {
-  "VIP TABLES": "MesaVipGold"
+  "RED TABLES":  "MesaRoja",
+  "BLUE TABLES": "MesaAzul",
+  "GOLD TABLES": "MesaGold",
 };
 
-// ✅ Nombres y números sincronizados con App.jsx
-const suitesData = {
-  "Suite 10 People": ["320","318","316","314","312","310","308","306","304","302","301","305","307","309","360","362"],
-  "Suite 20 People": ["364"],
-};
-
+// No suites for this event
 const tablesGroups = {
-  "VIP TABLES": Array.from({ length: 30 }, (_, i) => i + 1)
+  "GOLD TABLES": { numeros: Array.from({ length: 10 }, (_, i) => i + 1),      locked: true  },
+  "RED TABLES":  { numeros: Array.from({ length: 20 }, (_, i) => i + 11),     locked: false },
+  "BLUE TABLES": { numeros: Array.from({ length: 30 }, (_, i) => i + 31),     locked: false },
 };
 
 export default function AdminDashboard() {
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(EVENTS[0].id);
-  const [activeTab, setActiveTab] = useState('suites');
   const [occupiedData, setOccupiedData] = useState({ suites: [], mesas: [] });
   const [loading, setLoading] = useState(false);
 
-  const ADMIN_PASS_FRONT = 'Kirk2026'; 
+  const ADMIN_PASS_FRONT = 'Kirk2026';
 
   useEffect(() => {
     if (isAuthenticated) fetchOccupied();
@@ -52,29 +50,20 @@ export default function AdminDashboard() {
   };
 
   const handleLogin = () => {
-    if (password === ADMIN_PASS_FRONT) {
-      setIsAuthenticated(true);
-    } else {
-      alert("Contraseña incorrecta");
-    }
+    if (password === ADMIN_PASS_FRONT) setIsAuthenticated(true);
+    else alert("Contraseña incorrecta");
   };
 
   const toggleItem = async (type, numero, category) => {
-    const internalCategory = type === 'table' ? CATEGORY_MAP[category] : category;
+    const internalCategory = CATEGORY_MAP[category];
     const isOccupied = checkOccupied(type, numero, category);
-    if (isOccupied && !window.confirm(`¿Seguro que querés liberar ${type === 'suite' ? 'Suite' : 'Table'} #${numero}?`)) return;
+    if (isOccupied && !window.confirm(`¿Seguro que querés liberar Table #${numero}?`)) return;
 
     try {
       const res = await fetch(`${API_URL}/api/admin/toggle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          adminKey: password,
-          type,
-          numero,
-          eventId: selectedEvent,
-          category: internalCategory
-        })
+        body: JSON.stringify({ adminKey: password, type, numero, eventId: selectedEvent, category: internalCategory })
       });
       const json = await res.json();
       if (!res.ok) alert("Error: " + json.error);
@@ -85,15 +74,13 @@ export default function AdminDashboard() {
   };
 
   const checkOccupied = (type, numStr, category) => {
-    const list = type === 'suite' ? occupiedData.suites : occupiedData.mesas;
-    const internalCat = type === 'table' ? CATEGORY_MAP[category] : category;
+    const list = occupiedData.mesas;
+    const internalCat = CATEGORY_MAP[category];
     return list.some(item => item.numero === numStr.toString() && item.category === internalCat);
   };
 
-  const totalSuites = Object.values(suitesData).flat().length;
-  const totalMesas  = Object.values(tablesGroups).flat().length;
-  const ocupadasSuites = occupiedData.suites?.length || 0;
-  const ocupadasMesas  = occupiedData.mesas?.length  || 0;
+  const totalMesas  = 60;
+  const ocupadasMesas = occupiedData.mesas?.length || 0;
 
   // ── LOGIN ──────────────────────────────────────────────────────
   if (!isAuthenticated) {
@@ -102,8 +89,8 @@ export default function AdminDashboard() {
         <div className="bg-black/50 p-8 rounded-3xl border border-amber-600/30 text-center space-y-6 max-w-md w-full">
           <ShieldCheck className="w-16 h-16 text-amber-600 mx-auto" />
           <h1 className="text-2xl font-bold text-white uppercase tracking-widest">Acceso Restringido</h1>
-          <input 
-            type="password" 
+          <input
+            type="password"
             placeholder="Contraseña Maestra"
             className="w-full bg-stone-800 border border-stone-600 p-3 rounded-xl text-white text-center text-lg focus:border-amber-500 outline-none"
             value={password}
@@ -134,8 +121,8 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center gap-4 bg-stone-900 p-2 rounded-2xl border border-white/10">
             <Calendar className="text-amber-600 ml-2" />
-            <select 
-              value={selectedEvent} 
+            <select
+              value={selectedEvent}
               onChange={e => setSelectedEvent(e.target.value)}
               className="bg-transparent text-white font-bold outline-none p-2"
             >
@@ -147,17 +134,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* RESUMEN */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          <div className="bg-stone-900/60 border border-white/5 rounded-2xl p-5 text-center">
-            <p className="text-[10px] text-stone-500 uppercase tracking-widest mb-1">Suites Ocupadas</p>
-            <p className="text-3xl font-black text-red-500">{ocupadasSuites}</p>
-            <p className="text-[10px] text-stone-600 mt-1">de {totalSuites} totales</p>
-          </div>
-          <div className="bg-stone-900/60 border border-white/5 rounded-2xl p-5 text-center">
-            <p className="text-[10px] text-stone-500 uppercase tracking-widest mb-1">Suites Libres</p>
-            <p className="text-3xl font-black text-green-500">{totalSuites - ocupadasSuites}</p>
-            <p className="text-[10px] text-stone-600 mt-1">disponibles</p>
-          </div>
+        <div className="grid grid-cols-2 gap-4 mb-10 max-w-sm">
           <div className="bg-stone-900/60 border border-white/5 rounded-2xl p-5 text-center">
             <p className="text-[10px] text-stone-500 uppercase tracking-widest mb-1">Tables Ocupadas</p>
             <p className="text-3xl font-black text-red-500">{ocupadasMesas}</p>
@@ -168,22 +145,6 @@ export default function AdminDashboard() {
             <p className="text-3xl font-black text-green-500">{totalMesas - ocupadasMesas}</p>
             <p className="text-[10px] text-stone-600 mt-1">disponibles</p>
           </div>
-        </div>
-
-        {/* TABS */}
-        <div className="flex gap-4 mb-8">
-          <button 
-            onClick={() => setActiveTab('suites')}
-            className={`px-8 py-3 rounded-full font-bold uppercase tracking-widest transition-all ${activeTab === 'suites' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50' : 'bg-stone-900 text-stone-500 border border-white/5'}`}
-          >
-            Suites VIP
-          </button>
-          <button 
-            onClick={() => setActiveTab('mesas')}
-            className={`px-8 py-3 rounded-full font-bold uppercase tracking-widest transition-all ${activeTab === 'mesas' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50' : 'bg-stone-900 text-stone-500 border border-white/5'}`}
-          >
-            VIP Tables
-          </button>
         </div>
 
         {/* LOADING */}
@@ -199,30 +160,43 @@ export default function AdminDashboard() {
           <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-red-600 inline-block"/>Ocupado — click para liberar</span>
         </div>
 
-        {/* CONTENT */}
+        {/* TABLE GROUPS */}
         <div className="space-y-12">
-          {activeTab === 'suites' ? (
-            Object.keys(suitesData).map(catName => (
+          {Object.keys(tablesGroups).map(catName => {
+            const grp = tablesGroups[catName];
+            const colorClass = catName === 'GOLD TABLES' ? 'text-yellow-500' : catName === 'RED TABLES' ? 'text-red-400' : 'text-blue-400';
+            const borderClass = catName === 'GOLD TABLES' ? 'border-yellow-600' : catName === 'RED TABLES' ? 'border-red-600' : 'border-blue-600';
+            const subtitle = catName === 'GOLD TABLES' ? '10 tables · Contact us · Special pricing'
+              : catName === 'RED TABLES' ? '20 tables · $700 USD · 4 seats'
+              : '30 tables · $600 USD · 4 seats';
+
+            return (
               <div key={catName} className="bg-stone-900/50 p-8 rounded-[2rem] border border-white/5">
-                <h3 className="text-amber-500 font-bold uppercase tracking-widest mb-2 border-l-4 border-amber-600 pl-4">
+                <h3 className={`font-bold uppercase tracking-widest mb-2 border-l-4 pl-4 ${colorClass} ${borderClass}`}>
                   {catName}
                 </h3>
-                <p className="text-stone-600 text-[10px] uppercase tracking-widest mb-6 pl-4">
-                  {catName === "Suite 10 People"
-                    ? "16 suites · $2,000 USD · 10 people"
-                    : "1 suite · $4,000 USD · 20 people"}
-                </p>
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
-                  {suitesData[catName].map(num => {
-                    const isBlocked = checkOccupied('suite', num, catName);
+                <p className="text-stone-600 text-[10px] uppercase tracking-widest mb-6 pl-4">{subtitle}</p>
+                <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 gap-3">
+                  {grp.numeros.map(num => {
+                    if (grp.locked) {
+                      return (
+                        <div key={num} className="aspect-square rounded-xl font-black text-sm flex flex-col items-center justify-center border-2 border-yellow-600/30 bg-yellow-900/10 text-yellow-600/50 cursor-not-allowed">
+                          <span className="text-base">{num}</span>
+                          <Lock size={10} className="mt-0.5"/>
+                        </div>
+                      );
+                    }
+                    const isBlocked = checkOccupied('table', num, catName);
                     return (
                       <button
                         key={num}
-                        onClick={() => toggleItem('suite', num, catName)}
-                        className={`aspect-square rounded-xl font-black text-sm flex flex-col items-center justify-center transition-all border-2 
-                          ${isBlocked 
-                            ? 'bg-red-900/20 border-red-600 text-red-500 hover:bg-red-900/40' 
-                            : 'bg-green-900/20 border-green-600 text-green-500 hover:bg-green-900/40'
+                        onClick={() => toggleItem('table', num, catName)}
+                        className={`aspect-square rounded-xl font-black text-sm flex flex-col items-center justify-center transition-all border-2
+                          ${isBlocked
+                            ? 'bg-red-900/20 border-red-600 text-red-500 hover:bg-red-900/40'
+                            : catName === 'RED TABLES'
+                              ? 'bg-red-900/10 border-red-600/50 text-red-400 hover:bg-red-900/30'
+                              : 'bg-blue-900/10 border-blue-600/50 text-blue-400 hover:bg-blue-900/30'
                           }`}
                       >
                         <span className="text-base">{num}</span>
@@ -233,39 +207,8 @@ export default function AdminDashboard() {
                   })}
                 </div>
               </div>
-            ))
-          ) : (
-            Object.keys(tablesGroups).map(catName => (
-              <div key={catName} className="bg-stone-900/50 p-8 rounded-[2rem] border border-white/5">
-                <h3 className="text-amber-500 font-bold uppercase tracking-widest mb-2 border-l-4 border-amber-600 pl-4">
-                  {catName}
-                </h3>
-                <p className="text-stone-600 text-[10px] uppercase tracking-widest mb-6 pl-4">
-                  30 tables · $600 USD · 4 seats
-                </p>
-                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-3">
-                  {tablesGroups[catName].map(num => {
-                    const isBlocked = checkOccupied('table', num, catName);
-                    return (
-                      <button
-                        key={num}
-                        onClick={() => toggleItem('table', num, catName)}
-                        className={`aspect-square rounded-xl font-black text-sm flex flex-col items-center justify-center transition-all border-2 
-                          ${isBlocked 
-                            ? 'bg-red-900/20 border-red-600 text-red-500 hover:bg-red-900/40' 
-                            : 'bg-green-900/20 border-green-600 text-green-500 hover:bg-green-900/40'
-                          }`}
-                      >
-                        <span className="text-lg">{num}</span>
-                        <span className="text-[9px] uppercase mt-1">{isBlocked ? 'Ocupado' : 'Libre'}</span>
-                        {isBlocked ? <Lock size={12} className="mt-1"/> : <Unlock size={12} className="mt-1"/>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
-          )}
+            );
+          })}
         </div>
       </div>
     </div>
