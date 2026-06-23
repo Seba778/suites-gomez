@@ -150,7 +150,7 @@ function MainLanding() {
       borderColor: "border-yellow-600/50",
       bgColor: "bg-yellow-900/10",
       icon: <Lock className="w-5 h-5 text-yellow-500" />,
-      description: "Contact us for special pricing"
+      description: ""
     },
     "RED TABLES": {
       numeros: Array.from({ length: 20 }, (_, i) => i + 11),

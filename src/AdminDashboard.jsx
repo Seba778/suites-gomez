@@ -164,7 +164,7 @@ export default function AdminDashboard() {
         <div className="space-y-12">
           {Object.keys(tablesGroups).map(catName => {
             const grp = tablesGroups[catName];
-            const colorClass = catName === 'GOLD TABLEES' ? 'text-yellow-500' : catName === 'RED TABLES' ? 'text-red-400' : 'text-blue-400';
+            const colorClass = catName === 'GOLD TABLES' ? 'text-yellow-500' : catName === 'RED TABLES' ? 'text-red-400' : 'text-blue-400';
             const borderClass = catName === 'GOLD TABLES' ? 'border-yellow-600' : catName === 'RED TABLES' ? 'border-red-600' : 'border-blue-600';
             const subtitle = catName === 'GOLD TABLES' ? '10 tables · Contact us · Special pricing'
               : catName === 'RED TABLES' ? '20 tables · $700 USD · 4 seats'
