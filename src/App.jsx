@@ -17,6 +17,14 @@ const CATEGORY_MAP = {
   "GOLD TABLES": "MesaGold",
 };
 
+// 🔒 MESAS BLOQUEADAS MANUALMENTE (no se pueden reservar, independiente del servidor)
+// Para bloquear o liberar una mesa, agrega o quita su número de esta lista.
+const MANUAL_BLOCKS = {
+  "26-sep-2026": {
+    "MesaRoja": ["13", "14", "15", "16", "17", "20"],
+  },
+};
+
 // ✅ ACTIVE EVENTS
 const EVENTS = {
   "26-sep-2026": {
@@ -50,8 +58,11 @@ function MainLanding() {
   const [loadingOccupancy, setLoadingOccupancy] = useState(false);
 
   const isTableOccupied = (tableNumber, visualCategory, eventId = currentEventId) => {
-    if (!eventId || !occupancyData[eventId]) return false;
     const internalCategory = CATEGORY_MAP[visualCategory];
+    // 1) Bloqueos manuales permanentes (independientes del servidor)
+    if (MANUAL_BLOCKS[eventId]?.[internalCategory]?.includes(tableNumber.toString())) return true;
+    // 2) Bloqueos que vienen de la base de datos
+    if (!eventId || !occupancyData[eventId]) return false;
     return occupancyData[eventId].mesas.some(
       t => t.numero === tableNumber.toString() && t.category === internalCategory
     );
