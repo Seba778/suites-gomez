@@ -21,7 +21,7 @@ const CATEGORY_MAP = {
 const EVENTS = {
   "26-sep-2026": {
     name: "Stage Night",
-    date: "Friday, September 26, 2026",
+    date: "Saturday, October 24, 2026",
     location: "1818 Rodeo Dr. Mesquite TX 75149",
     image: "/STAGE_FARMERS.png",
     hasSuites: false
@@ -283,7 +283,7 @@ function MainLanding() {
                 <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter leading-none text-white mb-2">Stage Night</h3>
                 <div className="flex items-center gap-3 text-stone-300 text-xs">
                   <Calendar size={12} className="text-amber-500" />
-                  <span>Friday, September 26, 2026</span>
+                  <span>Saturday, October 24, 2026</span>
                   <span className="text-stone-600">·</span>
                   <MapPin size={12} className="text-amber-500" />
                   <span>Mesquite, TX</span>
