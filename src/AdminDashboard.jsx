@@ -3,7 +3,7 @@ import { ShieldCheck, Lock, Unlock, Calendar } from 'lucide-react';
 
 const API_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:4000'
-  : 'https://suites-gomez-production.up.railway.app';
+  : 'https://suites-gomez-production-33ea.up.railway.app';
 
 const EVENTS = [
   { id: "26-sep-2026", name: "26 Sep - Stage Night" }
