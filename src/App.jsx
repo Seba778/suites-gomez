@@ -8,7 +8,7 @@ import Success from './Success';
 import AdminDashboard from './AdminDashboard'; 
 
 const stripePromise = loadStripe('pk_live_51SoV9yRqCWGV92H1MaeHgtUiis4SfVjJ8Z5WEN6H2sFLoZtdnHu7LrU1qCoTuCYAApEgUivuTYVbdhwFMqHydtFq00lgEpDiQS');
-const API_URL = 'https://suites-gomez-production.up.railway.app';
+const API_URL = 'https://suites-gomez-production-33ea.up.railway.app';
 
 // ✅ VISUAL → INTERNAL CATEGORY MAP
 const CATEGORY_MAP = {
