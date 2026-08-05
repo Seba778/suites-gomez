@@ -4,15 +4,9 @@ import Stripe from 'stripe';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import nodemailer from 'nodemailer';
-import https from 'https';
 
-// Fuerza la conexión a Stripe por IPv4 (evita fallos de red IPv6 en Railway)
-const stripeAgent = new https.Agent({ family: 4, keepAlive: true });
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  httpAgent: stripeAgent,
-  timeout: 30000,
-  maxNetworkRetries: 3,
-});
+console.log("🔑 CLAVE QUE ESTOY USANDO:", process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const app = express();
 
 const transporter = nodemailer.createTransport({
@@ -22,6 +16,15 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD
   }
 });
+
+// --- NOMBRES VISIBLES DE EVENTOS (eventId -> nombre bonito) ---
+// Para agregar más eventos, añade su línea aquí.
+const EVENT_NAMES = {
+  "26-sep-2026": "Stage Night",
+  "20-feb-2026": "Evento 20 de Febrero",
+  "26-jun-2026": "Evento 26 de Junio",
+};
+const getEventName = (id) => EVENT_NAMES[id] || id;
 
 // --- CONEXIÓN A BASE DE DATOS ---
 mongoose.connect(process.env.MONGO_URI)
@@ -77,6 +80,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     const eventId = session.metadata?.eventId;
     const category = session.metadata?.category;
     const customerEmail = session.customer_details?.email;
+    const customerName = session.customer_details?.name || 'No proporcionado';
+    const eventName = getEventName(eventId);
 
     if (!itemNumber || !eventId || !category) {
       console.error(`🚨 FALTA DATOS EN METADATA: número=${itemNumber}, eventId=${eventId}, category=${category}`);
@@ -110,7 +115,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
               <h1 style="color: #d97706;">¡RESERVA CONFIRMADA!</h1>
               <p style="font-size: 16px;">Tu ${isTable ? 'Mesa VIP' : 'Suite'} número <strong style="font-size: 20px;">#${itemNumber}</strong> ya está reservada.</p>
               <p><strong>Categoría:</strong> ${category}</p>
-              <p><strong>Evento:</strong> ${eventId}</p>
+              <p><strong>Evento:</strong> ${eventName}</p>
               <p>Presenta este correo al llegar para tu acceso exclusivo.</p>
             </div>
           `
@@ -118,6 +123,32 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         transporter.sendMail(mailOptions, (err) => {
           if (err) console.error("❌ Error enviando email:", err);
           else console.log(`📧 Email enviado a ${customerEmail}`);
+        });
+      }
+
+      // 📨 AVISO AL ORGANIZADOR (con nombre y correo del comprador)
+      const notifyTo = process.env.NOTIFY_EMAIL || process.env.EMAIL_USER;
+      if (notifyTo) {
+        const adminMail = {
+          from: process.env.EMAIL_USER,
+          to: notifyTo,
+          subject: `🎟️ Nueva reserva: ${eventName} · ${isTable ? 'Mesa' : 'Suite'} #${itemNumber}`,
+          html: `
+            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #d97706; border-radius: 10px; max-width: 500px;">
+              <h2 style="color: #d97706; margin-top: 0;">Nueva reserva confirmada</h2>
+              <p><strong>Evento:</strong> ${eventName}</p>
+              <p><strong>${isTable ? 'Mesa' : 'Suite'} número:</strong> #${itemNumber}</p>
+              <p><strong>Categoría:</strong> ${category}</p>
+              <hr style="border: none; border-top: 1px solid #eee;">
+              <p><strong>Nombre del cliente:</strong> ${customerName}</p>
+              <p><strong>Correo del cliente:</strong> ${customerEmail || 'No proporcionado'}</p>
+              <p style="color: #888; font-size: 12px;"><strong>Fecha de compra:</strong> ${new Date().toLocaleString('es-MX')}</p>
+            </div>
+          `
+        };
+        transporter.sendMail(adminMail, (err) => {
+          if (err) console.error("❌ Error enviando aviso al organizador:", err);
+          else console.log(`📧 Aviso de reserva enviado a ${notifyTo}`);
         });
       }
     } catch (error) {
@@ -217,8 +248,6 @@ app.post('/create-checkout-session', async (req, res) => {
     res.json({ url: session.url });
   } catch (error) {
     console.error("🚨 Error Stripe:", error.message);
-    console.error("🚨 Tipo:", error.type, "| Código:", error.code);
-    console.error("🚨 Causa raíz:", (error.cause && (error.cause.code || error.cause.message)) || error.detail || "sin detalle");
     res.status(500).json({ error: error.message });
   }
 });
