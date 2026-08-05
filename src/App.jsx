@@ -8,7 +8,7 @@ import Success from './Success';
 import AdminDashboard from './AdminDashboard'; 
 
 const stripePromise = loadStripe('pk_live_51SoV9yRqCWGV92H1MaeHgtUiis4SfVjJ8Z5WEN6H2sFLoZtdnHu7LrU1qCoTuCYAApEgUivuTYVbdhwFMqHydtFq00lgEpDiQS');
-const API_URL = 'https://suites-gomez-production-33ea.up.railway.app';
+const API_URL = 'https://suites-gomez-production.up.railway.app';
 
 // ✅ VISUAL → INTERNAL CATEGORY MAP
 const CATEGORY_MAP = {
@@ -310,6 +310,26 @@ function MainLanding() {
             <div className="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-amber-600/50 rounded-tl-lg pointer-events-none" />
             <div className="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-amber-600/50 rounded-tr-lg pointer-events-none" />
           </div>
+
+          {/* ── LOS ACOSTA (flyer clickeable -> subdominio) ──────── */}
+          <a
+            href="https://los-acosta.gomezarenaofficial.com"
+            className="group block max-w-5xl mx-auto mt-10 cursor-pointer"
+          >
+            <div className="relative rounded-[3rem] overflow-hidden border border-amber-600/25 shadow-2xl">
+              <img
+                src="/STAGE_ACOSTA.png"
+                alt="Los Acosta · Domingo 13 de Septiembre · Gomez Western Wear Arena"
+                className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-500" />
+            </div>
+            <div className="mt-6 flex items-center justify-center">
+              <span className="bg-amber-600 group-hover:bg-amber-500 text-white font-black py-4 px-10 rounded-full transition-all shadow-xl uppercase tracking-widest text-xs whitespace-nowrap">
+                Los Acosta · Book a Table
+              </span>
+            </div>
+          </a>
         </section>
 
         {/* ── ABOUT US ────────────────────────────────────────── */}
